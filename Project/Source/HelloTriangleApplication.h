@@ -1,6 +1,7 @@
 #ifndef GP2VKT_HELLOTRIANGLEAPPLICATION_H_
 #define GP2VKT_HELLOTRIANGLEAPPLICATION_H_
 // Includes
+#include <vulkan/vulkan_core.h>
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -29,6 +30,7 @@ public:
 private:
 	// Member variables
 	GLFWwindow* m_Window; // TODO: RAII
+	VkInstance m_Instance;
 
 	//---------------------------
 	// Private Member Functions
@@ -37,5 +39,7 @@ private:
 	void InitVulkan();
 	void MainLoop();
 	void Cleanup();
+
+	void CreateInstance();
 };
 #endif
