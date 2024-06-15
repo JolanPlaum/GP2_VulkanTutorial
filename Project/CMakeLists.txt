@@ -26,6 +26,8 @@ add_custom_target(
 
 set(SOURCES
     "main.cpp"
+    "Utils.h"
+    "Source/HelloTriangleApplication.h" "Source/HelloTriangleApplication.cpp"
 )
 
 # Create the executable
