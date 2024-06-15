@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Project Name
-project(VulkanLab01)
+project(GP2_VulkanTutorial)
 
 # Use C++17
 set(CMAKE_CXX_STANDARD 17)
