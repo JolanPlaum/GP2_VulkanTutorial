@@ -17,6 +17,12 @@ struct QueueFamilyIndices
 			&& PresentFamily.has_value();
 	}
 };
+struct SwapChainSupportDetails
+{
+	VkSurfaceCapabilitiesKHR Capabilities;
+	std::vector<VkSurfaceFormatKHR> Formats;
+	std::vector<VkPresentModeKHR> PresentModes;
+};
 
 
 // Class Declaration
@@ -53,6 +59,11 @@ private:
 	VkQueue m_GraphicsQueue; // TODO: RAII
 	VkQueue m_PresentQueue; // TODO: RAII
 
+	VkSwapchainKHR m_SwapChain; // TODO: RAII
+	std::vector<VkImage> m_SwapChainImages;
+	VkFormat m_SwapChainImageFormat;
+	VkExtent2D m_SwapChainExtent;
+
 	//---------------------------
 	// Private Member Functions
 	//---------------------------
@@ -85,9 +96,16 @@ private:
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 	void CreateLogicalDevice();
 
 	void CreateSurface();
+
+	void CreateSwapChain();
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 };
 #endif
