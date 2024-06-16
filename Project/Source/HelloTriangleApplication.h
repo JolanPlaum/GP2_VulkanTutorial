@@ -63,6 +63,7 @@ private:
 	std::vector<VkImage> m_SwapChainImages;
 	VkFormat m_SwapChainImageFormat;
 	VkExtent2D m_SwapChainExtent;
+	std::vector<VkImageView> m_SwapChainImageViews;
 
 	//---------------------------
 	// Private Member Functions
@@ -107,5 +108,7 @@ private:
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+	void CreateImageViews();
 };
 #endif
