@@ -41,6 +41,8 @@ private:
 	VkInstance m_Instance; // TODO: RAII
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
+	VkDevice m_Device; // TODO: RAII
+	VkQueue m_GraphicsQueue; // TODO: RAII
 
 	//---------------------------
 	// Private Member Functions
@@ -74,5 +76,7 @@ private:
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
+
+	void CreateLogicalDevice();
 };
 #endif

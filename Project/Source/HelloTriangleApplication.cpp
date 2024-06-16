@@ -54,9 +54,10 @@ void HelloTriangleApplication::InitVulkan()
 {
 	// Instance should be created first
 	CreateInstance();
-
 	SetupDebugMessenger();
+
 	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -68,6 +69,9 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
+	vkDestroyDevice(m_Device, nullptr);
+
+	// Destroyed right before instance to allow for debug messages during cleanup
 	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 	// Instance should be cleaned up last
@@ -334,4 +338,49 @@ QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice 
 	}
 
 	return indices;
+}
+
+void HelloTriangleApplication::CreateLogicalDevice()
+{
+	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+
+	// Priority between 0.0 and 1.0
+	float queuePriority{ 1.0f };
+
+	// Describes the number of queues for a single queue family
+	VkDeviceQueueCreateInfo queueCreateInfo{};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
+	queueCreateInfo.queueCount = 1;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	// TODO: DeviceFeatures make sure this is implemented for final version
+	// Temporarily empty as we currently don't need anything special
+	VkPhysicalDeviceFeatures deviceFeatures{};
+
+	// Main info structor for logical device
+	VkDeviceCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = 1;
+	createInfo.pEnabledFeatures = &deviceFeatures;
+
+	createInfo.enabledExtensionCount = 0;
+	if (config::EnableValidationLayers) {
+		// These are ignored by up-to-date implementations
+		// Good idea to set them anyway for compatibility with older versions
+		createInfo.enabledLayerCount = static_cast<uint32_t>(config::ValidationLayers.size());
+		createInfo.ppEnabledLayerNames = config::ValidationLayers.data();
+	}
+	else {
+		createInfo.enabledLayerCount = 0;
+	}
+
+	// Create logical device using specified data
+	if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create logical device!");
+	}
+
+	// Retrieve queue handle for queue family (index 0 as there's only one right now)
+	vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
 }
