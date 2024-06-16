@@ -10,8 +10,12 @@ class GLFWwindow;
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> GraphicsFamily;
+	std::optional<uint32_t> PresentFamily;
 
-	bool IsComplete() const { return GraphicsFamily.has_value(); }
+	bool IsComplete() const {
+		return GraphicsFamily.has_value()
+			&& PresentFamily.has_value();
+	}
 };
 
 
@@ -38,11 +42,16 @@ public:
 private:
 	// Member variables
 	GLFWwindow* m_Window; // TODO: RAII
+
 	VkInstance m_Instance; // TODO: RAII
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
+	VkSurfaceKHR m_Surface; // TODO: RAII
+
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
 	VkDevice m_Device; // TODO: RAII
+
 	VkQueue m_GraphicsQueue; // TODO: RAII
+	VkQueue m_PresentQueue; // TODO: RAII
 
 	//---------------------------
 	// Private Member Functions
@@ -78,5 +87,7 @@ private:
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 
 	void CreateLogicalDevice();
+
+	void CreateSurface();
 };
 #endif

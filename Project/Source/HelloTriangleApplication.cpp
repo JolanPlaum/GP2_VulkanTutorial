@@ -9,6 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
+#include <set>
 
 
 //-----------------------------------------------------------------
@@ -55,7 +56,9 @@ void HelloTriangleApplication::InitVulkan()
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
+	CreateSurface(); // can affect physical device selection
 
+	// Physical and logical device setup
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 }
@@ -75,6 +78,7 @@ void HelloTriangleApplication::Cleanup()
 	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 	// Instance should be cleaned up last
+	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 	vkDestroyInstance(m_Instance, nullptr);
 
 	// GLFW window
@@ -330,6 +334,12 @@ QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice 
 			indices.GraphicsFamily = i;
 		}
 
+		VkBool32 presentSupport{ false };
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_Surface, &presentSupport);
+		if (presentSupport) {
+			indices.PresentFamily = i;
+		}
+
 		if (indices.IsComplete()) {
 			break;
 		}
@@ -344,15 +354,24 @@ void HelloTriangleApplication::CreateLogicalDevice()
 {
 	QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
-	// Priority between 0.0 and 1.0
-	float queuePriority{ 1.0f };
+	// Store queue families in a set to ensure unique queues
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+	std::set<uint32_t> uniqueQueueFamilies = { indices.GraphicsFamily.value(), indices.PresentFamily.value() };
 
-	// Describes the number of queues for a single queue family
-	VkDeviceQueueCreateInfo queueCreateInfo{};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	// Loop over all unique queue families and create data for each one
+	float queuePriority{ 1.0f };
+	for (uint32_t queueFamily : uniqueQueueFamilies)
+	{
+		// Describes the number of queues for a single queue family
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		// Add to the list
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	// TODO: DeviceFeatures make sure this is implemented for final version
 	// Temporarily empty as we currently don't need anything special
@@ -361,11 +380,11 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	// Main info structor for logical device
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos = &queueCreateInfo;
-	createInfo.queueCreateInfoCount = 1;
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.pEnabledFeatures = &deviceFeatures;
-
 	createInfo.enabledExtensionCount = 0;
+
 	if (config::EnableValidationLayers) {
 		// These are ignored by up-to-date implementations
 		// Good idea to set them anyway for compatibility with older versions
@@ -383,4 +402,13 @@ void HelloTriangleApplication::CreateLogicalDevice()
 
 	// Retrieve queue handle for queue family (index 0 as there's only one right now)
 	vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(m_Device, indices.PresentFamily.value(), 0, &m_PresentQueue);
+}
+
+void HelloTriangleApplication::CreateSurface()
+{
+	// Create surface
+	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create window surface!");
+	}
 }
