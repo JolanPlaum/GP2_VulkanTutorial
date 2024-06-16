@@ -3,9 +3,16 @@
 // Includes
 #include <vulkan/vulkan_core.h>
 #include <vector>
+#include <optional>
 
 // Class Forward Declarations
 class GLFWwindow;
+struct QueueFamilyIndices
+{
+	std::optional<uint32_t> GraphicsFamily;
+
+	bool IsComplete() const { return GraphicsFamily.has_value(); }
+};
 
 
 // Class Declaration
@@ -33,6 +40,7 @@ private:
 	GLFWwindow* m_Window; // TODO: RAII
 	VkInstance m_Instance; // TODO: RAII
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
+	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
 
 	//---------------------------
 	// Private Member Functions
@@ -62,5 +70,9 @@ private:
 		VkInstance instance,
 		VkDebugUtilsMessengerEXT debugMessenger,
 		const VkAllocationCallbacks* pAllocator);
+
+	void PickPhysicalDevice();
+	bool IsDeviceSuitable(VkPhysicalDevice device);
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 };
 #endif

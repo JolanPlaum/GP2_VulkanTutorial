@@ -56,6 +56,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateInstance();
 
 	SetupDebugMessenger();
+	PickPhysicalDevice();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -67,9 +68,7 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
-	if (config::EnableValidationLayers) {
-		DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
-	}
+	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 	// Instance should be cleaned up last
 	vkDestroyInstance(m_Instance, nullptr);
@@ -258,4 +257,81 @@ void HelloTriangleApplication::DestroyDebugUtilsMessengerEXT(VkInstance instance
 	if (func != nullptr) {
 		func(instance, debugMessenger, pAllocator);
 	}
+}
+
+void HelloTriangleApplication::PickPhysicalDevice()
+{
+	// Get the number of graphics cards available
+	uint32_t deviceCount{ 0 };
+	vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+
+	// Exit early if there are 0 devices with Vulkan support
+	if (deviceCount == 0) {
+		throw std::runtime_error("failed to find GPUs with Vulkan support!");
+	}
+
+	// Allocate an array to hold all the device handles
+	std::vector<VkPhysicalDevice> devices(deviceCount);
+	vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
+
+	// TODO: PhysicalDevice go for the best option instead of the first one that works
+	// Evaluate each device and check if they are suitable
+	for (const auto& device : devices)
+	{
+		if (IsDeviceSuitable(device)) {
+			m_PhysicalDevice = device;
+			break;
+		}
+	}
+
+	// Throw if none are suitable
+	if (m_PhysicalDevice == VK_NULL_HANDLE) {
+		throw std::runtime_error("failed to find a suitable GPU!");
+	}
+}
+bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
+{
+	/*
+	// Basic device properties (e.g. name, type & supported Vulkan version)
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	// Optional features (e.g. texture compression, 64 bit floats & multi viewport rendering)
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	*/
+
+	QueueFamilyIndices indices = FindQueueFamilies(device);
+
+	return indices.IsComplete();
+}
+QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
+{
+	QueueFamilyIndices indices;
+
+	// Get the number of queue families
+	uint32_t queueFamilyCount{ 0 };
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	// Allocate an array to hold all the available queue families
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	// TODO: QueueFamily understand this code, IMPORTANT!!!
+	// We need to find at least 1 queue family that supports 'VK_QUEUE_GRAPHICS_BIT'
+	int i{ 0 };
+	for (const auto& queueFamily : queueFamilies)
+	{
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indices.GraphicsFamily = i;
+		}
+
+		if (indices.IsComplete()) {
+			break;
+		}
+
+		i++;
+	}
+
+	return indices;
 }
