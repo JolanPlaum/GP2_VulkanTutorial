@@ -93,14 +93,14 @@ private:
 		VkDebugUtilsMessengerEXT debugMessenger,
 		const VkAllocationCallbacks* pAllocator);
 
+	void CreateSurface();
+
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 	bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 	void CreateLogicalDevice();
-
-	void CreateSurface();
 
 	void CreateSwapChain();
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);

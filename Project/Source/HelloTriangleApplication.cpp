@@ -272,6 +272,14 @@ void HelloTriangleApplication::DestroyDebugUtilsMessengerEXT(VkInstance instance
 	}
 }
 
+void HelloTriangleApplication::CreateSurface()
+{
+	// Create surface
+	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create window surface!");
+	}
+}
+
 void HelloTriangleApplication::PickPhysicalDevice()
 {
 	// Get the number of graphics cards available
@@ -426,14 +434,6 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	// Retrieve queue handle for queue family (index 0 as there's only one right now)
 	vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
 	vkGetDeviceQueue(m_Device, indices.PresentFamily.value(), 0, &m_PresentQueue);
-}
-
-void HelloTriangleApplication::CreateSurface()
-{
-	// Create surface
-	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!");
-	}
 }
 
 void HelloTriangleApplication::CreateSwapChain()
