@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <fstream>
 
 namespace config
 {
@@ -16,6 +17,32 @@ namespace config
 #else
 	const bool EnableValidationLayers = true;
 #endif
+}
+
+namespace util
+{
+	static std::vector<char> ReadFile(const std::string& filename)
+	{
+		// Create file stream
+		std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+		// Check if the file exists
+		if (!file.is_open()) {
+			throw std::runtime_error("failed to open file!");
+		}
+
+		// Determine file size and allocate enough space
+		size_t fileSize = (size_t)file.tellg();
+		std::vector<char> buffer(fileSize);
+
+		// Go to beginning and read all the bytes at once
+		file.seekg(0);
+		file.read(buffer.data(), fileSize);
+
+		// Close file before exiting the function
+		file.close();
+		return buffer;
+	}
 }
 
 #endif
