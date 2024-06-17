@@ -66,6 +66,8 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateSwapChain();
 	CreateImageViews();
+
+	CreateGraphicsPipeline();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -625,3 +627,6 @@ VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitie
 	return actualExtent;
 }
 
+void HelloTriangleApplication::CreateGraphicsPipeline() {
+
+}
