@@ -65,6 +65,8 @@ private:
 	VkExtent2D m_SwapChainExtent;
 	std::vector<VkImageView> m_SwapChainImageViews;
 
+	VkPipelineLayout m_PipelineLayout; // TODO: RAII
+
 	//---------------------------
 	// Private Member Functions
 	//---------------------------

@@ -47,7 +47,7 @@ void HelloTriangleApplication::InitWindow()
 	// Do not create OpenGL context 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	// TODO: enable resizing in final version
+	// TODO: InitWindow enable resizing in final version
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	// Create the actual window
@@ -79,6 +79,8 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
+	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+
 	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
 	vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 	vkDestroyDevice(m_Device, nullptr);
@@ -116,7 +118,7 @@ void HelloTriangleApplication::CreateInstance()
 
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo; // TODO: make a helper getter function
+	createInfo.pApplicationInfo = &appInfo; // TODO: AppInfo make a helper getter function
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -638,7 +640,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
 
 	// TODO: Shader read up on .pName and .pSpecializationInfo, interesting for custimization of single shader usage
-	// Assign vertex & fragment shader to a specific pipeline
+	// Assign vertex & fragment shader to a specific pipeline stage
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT; // specify pipeline stage
@@ -653,11 +655,131 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
-	// Define shader stages
 	VkPipelineShaderStageCreateInfo shaderStages[] = {
 		vertShaderStageInfo,
 		fragShaderStageInfo
 	};
+
+
+
+	// Describe the format of vertex data that will be passed to the vertex shader
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputInfo.vertexBindingDescriptionCount = 0;
+	vertexInputInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+	// Describe the kind of geometry drawn from vertices (topology) & if primitive restart is enabled
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	// Viewport & scissor data (in case not dynamically used)
+	/*
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = (float)m_SwapChainExtent.width;
+	viewport.height = (float)m_SwapChainExtent.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+
+	VkRect2D scissor{};
+	scissor.offset = { 0, 0 };
+	scissor.extent = m_SwapChainExtent;
+	*/
+	// Specify viewport & scissor count at pipeline creation
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = nullptr; // &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = nullptr; // &scissor;
+
+	// Rasterizer takes geometry from vertex shader and turns it into fragments
+	VkPipelineRasterizationStateCreateInfo rasterizer{};
+	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizer.depthClampEnable = VK_FALSE; // if true fragments beyond near/far planes are clamped instead of discarded (requires GPU feature)
+	rasterizer.rasterizerDiscardEnable = VK_FALSE; // if true geometry never passes through rasterizer stage (basically disables output to framebuffer)
+	rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // determines how fragments are generated for geometry (requires GPU feature if not fill)
+	rasterizer.lineWidth = 1.0f; // describes thickness of lines (requires GPU feature if thicker than 1.0f)
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // determines type of culling
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; // specifies vertex order
+	rasterizer.depthBiasEnable = VK_FALSE; // if true allows depth values to be altered
+	rasterizer.depthBiasConstantFactor = 0.0f;
+	rasterizer.depthBiasClamp = 0.0f;
+	rasterizer.depthBiasSlopeFactor = 0.0f;
+
+	// Will be revisited later (requires GPU feature)
+	VkPipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampling.minSampleShading = 1.0f;
+	multisampling.pSampleMask = nullptr;
+	multisampling.alphaToCoverageEnable = VK_FALSE;
+	multisampling.alphaToOneEnable = VK_FALSE;
+
+	// Needed in case of depth and/or stencil buffer
+	//VkPipelineDepthStencilStateCreateInfo depthStencilState{};
+
+
+
+	// Color blending configuration per attached framebuffer
+	VkPipelineColorBlendAttachmentState colorBlendAttachment{}; // normally an array but there's currently only 1 framebuffer
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT; // resulting blended color is AND'd with
+	colorBlendAttachment.blendEnable = VK_FALSE; // if false AND if logicOpEnable false then the fragment shader result color is unmodified
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+	// Color blending settings for all colors
+	VkPipelineColorBlendStateCreateInfo colorBlending{};
+	colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlending.logicOpEnable = VK_FALSE; // if true allows usage of logicOp field
+	colorBlending.logicOp = VK_LOGIC_OP_COPY; // if not COPY then blendEnable (prev) will act as if false & colorWriteMask will be used to determine affected framebuffer channels
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+	colorBlending.blendConstants[0] = 0.0f;
+	colorBlending.blendConstants[1] = 0.0f;
+	colorBlending.blendConstants[2] = 0.0f;
+	colorBlending.blendConstants[3] = 0.0f;
+
+
+
+	// Values that should have configuration ignored (these values NEED specification at draw time)
+	std::vector<VkDynamicState> dynamicStates = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+	// Dynamic state info, only in case dynamic state is needed
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
+
+
+
+	// Specify uniform values used in shaders (global values similar to dynamic state variables)
+	// Commonly used to pass the transformation matrix to the vertex shader
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	// Create pipeline layout using specified data
+	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+
 
 	// Destroy shader modules (should be destroyed right after pipeline creation)
 	vkDestroyShaderModule(m_Device, fragShaderModule, nullptr);
