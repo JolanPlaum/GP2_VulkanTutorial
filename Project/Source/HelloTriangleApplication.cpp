@@ -69,6 +69,8 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateRenderPass();
 	CreateGraphicsPipeline();
+
+	CreateFramebuffers();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -80,6 +82,8 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
+	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
@@ -901,4 +905,33 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 	}
 
 	return shaderModule;
+}
+
+void HelloTriangleApplication::CreateFramebuffers()
+{
+	// Allocate enough space for all the swap chain frame buffers
+	m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+
+	// Loop over all the swap chain image views
+	for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
+	{
+		// This should be bound to the respective attachment descriptions in the render pass
+		VkImageView attachments[] = {
+			m_SwapChainImageViews[i]
+		};
+
+		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = m_RenderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = m_SwapChainExtent.width;
+		framebufferInfo.height = m_SwapChainExtent.height;
+		framebufferInfo.layers = 1; // refers to the number of layers inside of each swap chain image
+
+		if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+	}
 }

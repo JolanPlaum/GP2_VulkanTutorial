@@ -69,6 +69,8 @@ private:
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
+	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
+
 	//---------------------------
 	// Private Member Functions
 	//---------------------------
@@ -117,5 +119,7 @@ private:
 	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
+	void CreateFramebuffers();
 };
 #endif
