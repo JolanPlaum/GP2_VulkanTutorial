@@ -67,6 +67,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateSwapChain();
 	CreateImageViews();
 
+	CreateRenderPass();
 	CreateGraphicsPipeline();
 }
 void HelloTriangleApplication::MainLoop()
@@ -80,6 +81,7 @@ void HelloTriangleApplication::MainLoop()
 void HelloTriangleApplication::Cleanup()
 {
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
 
 	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
 	vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
@@ -513,7 +515,7 @@ void HelloTriangleApplication::CreateSwapChain()
 }
 void HelloTriangleApplication::CreateImageViews()
 {
-	// Allocate enough space for all the swap chain images
+	// Allocate enough space for all the swap chain image views
 	m_SwapChainImageViews.resize(m_SwapChainImages.size());
 
 	// Loop over all the swap chain images
@@ -629,6 +631,77 @@ VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitie
 	return actualExtent;
 }
 
+void HelloTriangleApplication::CreateRenderPass()
+{
+	// There can be multiple attachments descriptions per render pass.
+	// For every attachment there's 1 attachment reference, however
+	//  this can be more if the desired reference layout differs.
+	// Every subpass references one or more attachments
+
+
+	// Attachment description
+	VkAttachmentDescription colorAttachment{}; // normally an array but we're currently using a single color buffer
+	{
+		colorAttachment.format = m_SwapChainImageFormat; // should match the format of the swap chain images
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // should match multisampling settings from graphics pipeline
+
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // determines what to do with data before rendering
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // determines what to do with data after rendering
+
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // loadOp but for stencil data
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // storeOp but for stencil data
+
+		// These 2 values will be revisited later
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // specifies which layout the image will have before render pass begins
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // specifies the layout to automatically transition to after render pass finishes
+	}
+
+	// Attachment reference
+	VkAttachmentReference colorAttachmentRef{}; // normally an array but we're currently using a single color buffer
+	{
+		colorAttachmentRef.attachment = 0; // specifies which attachment to reference (by index)
+
+		// Vulkan will automatically transition the attachment to this layout when the subpass is started
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // dependant on the attachment it references
+	}
+
+
+	// Subpass description
+	VkSubpassDescription subpass{}; // normally an array but we're currently using a single color buffer
+	{
+		// Be explicit about this being a graphics subpass as Vulkan may support compute subpasses in the future
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+		// Each element corresponds to an output location in the fragment shader
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+		subpass.pResolveAttachments = nullptr; // used for multisampling (pColorAttachments can not be null)
+
+		// Each element corresponds to an input attachment index in a fragment shader
+		subpass.inputAttachmentCount = 0;
+		subpass.pInputAttachments = nullptr;
+
+		// Attachment for depth and stencil data (single element)
+		subpass.pDepthStencilAttachment = nullptr;
+
+		// Attachments that are not used by this subpass, but for which the data must be preserved
+		subpass.preserveAttachmentCount = 0;
+		subpass.pPreserveAttachments = nullptr;
+	}
+
+
+	// Create the render pass using the attachments and subpasses
+	VkRenderPassCreateInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	if (vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create render pass!");
+	}
+}
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Load bytecode for the shaders

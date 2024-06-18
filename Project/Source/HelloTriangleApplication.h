@@ -65,6 +65,7 @@ private:
 	VkExtent2D m_SwapChainExtent;
 	std::vector<VkImageView> m_SwapChainImageViews;
 
+	VkRenderPass m_RenderPass; // TODO: RAII
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
 
 	//---------------------------
@@ -112,6 +113,7 @@ private:
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
+	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 };
