@@ -70,6 +70,9 @@ private:
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
+	VkCommandPool m_CommandPool; // TODO: RAII
+	VkCommandBuffer m_CommandBuffer;
+
 
 	//---------------------------
 	// Private Member Functions
@@ -118,9 +121,13 @@ private:
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	void CreateRenderPass();
+
 	void CreatePipelineLayout();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
+	void CreateCommandPool();
+	void AllocateCommandBuffer();
+	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 };
 #endif

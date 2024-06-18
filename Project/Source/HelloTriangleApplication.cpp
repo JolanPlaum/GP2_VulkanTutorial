@@ -74,6 +74,8 @@ void HelloTriangleApplication::InitVulkan()
 	CreatePipelineLayout();
 	CreateGraphicsPipeline();
 
+	CreateCommandPool();
+	AllocateCommandBuffer();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -85,10 +87,13 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
-	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+
+	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
 
 	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
@@ -736,6 +741,7 @@ void HelloTriangleApplication::CreateRenderPass()
 		throw std::runtime_error("failed to create render pass!");
 	}
 }
+
 void HelloTriangleApplication::CreatePipelineLayout()
 {
 	// Specify uniform values used in shaders (global values similar to dynamic state variables)
@@ -934,4 +940,95 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 	}
 
 	return shaderModule;
+}
+
+void HelloTriangleApplication::CreateCommandPool()
+{
+	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
+	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
+
+	// A pool can only allocate command buffers on a single type of queue
+	VkCommandPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value();
+
+	if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create command pool!");
+	}
+}
+void HelloTriangleApplication::AllocateCommandBuffer()
+{
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = m_CommandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+
+	if (vkAllocateCommandBuffers(m_Device, &allocInfo, &m_CommandBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate command buffers!");
+	}
+}
+void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+{
+	// Specifies usage of command buffer
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = 0; // specifies how we're going to use the command buffer
+	beginInfo.pInheritanceInfo = nullptr; // only relevant for secondary command buffers
+
+	// Begin recording commands, if it was already recorder once it will implicitly reset it
+	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+		throw std::runtime_error("failed to begin recording command buffer!");
+	}
+
+	// Configure render pass before drawing
+	VkRenderPassBeginInfo renderPassInfo{};
+	{
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
+
+		// Define where shader loads/stores take place, should match size of attachments for best performance
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = m_SwapChainExtent;
+
+		// Define colors to use for VK_ATTACHMENT_LOAD_OP_CLEAR (used in color attachment)
+		std::vector<VkClearValue> clearColors = { VkClearValue{0.0f, 0.0f, 0.0f, 1.0f} };
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearColors.size());
+		renderPassInfo.pClearValues = clearColors.data();
+	}
+
+	// Render pass
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	{
+		// Bind graphics pipeline
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+
+		// SET DYNAMIC STATES !!!!! this will depend on what was chosen as dynamic state
+		{
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = static_cast<float>(m_SwapChainExtent.width);
+			viewport.height = static_cast<float>(m_SwapChainExtent.height);
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+			VkRect2D scissor{};
+			scissor.offset = { 0, 0 };
+			scissor.extent = m_SwapChainExtent;
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		}
+
+		// TODO: CmdDraw get rid of magic numbers
+		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+	}
+	vkCmdEndRenderPass(commandBuffer);
+
+	// End recording commands
+	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to record command buffer!");
+	}
 }
