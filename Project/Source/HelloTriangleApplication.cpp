@@ -480,14 +480,14 @@ void HelloTriangleApplication::CreateSwapChain()
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // possible to render to seperate image first (e.g. post-processing)
 
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
-		uint32_t queueFamilyIndices[] = { indices.GraphicsFamily.value(), indices.PresentFamily.value() };
+		std::vector<uint32_t> queueFamilyIndices = { indices.GraphicsFamily.value(), indices.PresentFamily.value() };
 
 		// Using concurrent mode if the queue families differ & exclusive if they are the same
 		// This way there's no need for explicit ownership transfer
 		if (indices.GraphicsFamily != indices.PresentFamily) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+			createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+			createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
 		}
 		else {
 			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -913,19 +913,17 @@ void HelloTriangleApplication::CreateFramebuffers()
 	m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
 
 	// Loop over all the swap chain image views
-	for (size_t i = 0; i < m_SwapChainImageViews.size(); i++)
+	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
 	{
 		// This should be bound to the respective attachment descriptions in the render pass
-		VkImageView attachments[] = {
-			m_SwapChainImageViews[i]
-		};
+		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i] };
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = m_SwapChainExtent.width;
 		framebufferInfo.height = m_SwapChainExtent.height;
 		framebufferInfo.layers = 1; // refers to the number of layers inside of each swap chain image
