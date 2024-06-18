@@ -80,6 +80,7 @@ void HelloTriangleApplication::MainLoop()
 }
 void HelloTriangleApplication::Cleanup()
 {
+	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
 
@@ -728,12 +729,10 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
-	VkPipelineShaderStageCreateInfo shaderStages[] = {
+	std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {
 		vertShaderStageInfo,
 		fragShaderStageInfo
 	};
-
-
 
 	// Describe the format of vertex data that will be passed to the vertex shader
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -742,6 +741,8 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	vertexInputInfo.pVertexBindingDescriptions = nullptr;
 	vertexInputInfo.vertexAttributeDescriptionCount = 0;
 	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+
 
 	// Describe the kind of geometry drawn from vertices (topology) & if primitive restart is enabled
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -850,6 +851,33 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	// Create pipeline layout using specified data
 	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+
+
+	// Combine all of the previous data structures to define the graphics pipeline
+	VkGraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+	pipelineInfo.pStages = shaderStages.data();
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pTessellationState = nullptr; // Optional
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = nullptr; // Optional
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.layout = m_PipelineLayout;
+	pipelineInfo.renderPass = m_RenderPass;
+	pipelineInfo.subpass = 0; // index of the subpass where this pipeline will be used
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
+	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
+
+	// Create the graphics pipeline (can create multiple pipelines in a single call)
+	if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 
 

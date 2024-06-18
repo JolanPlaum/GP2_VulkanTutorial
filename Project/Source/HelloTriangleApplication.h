@@ -67,6 +67,7 @@ private:
 
 	VkRenderPass m_RenderPass; // TODO: RAII
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
+	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
 	//---------------------------
 	// Private Member Functions
