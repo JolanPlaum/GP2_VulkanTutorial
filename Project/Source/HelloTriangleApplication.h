@@ -64,12 +64,12 @@ private:
 	VkFormat m_SwapChainImageFormat;
 	VkExtent2D m_SwapChainExtent;
 	std::vector<VkImageView> m_SwapChainImageViews;
+	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
 	VkRenderPass m_RenderPass; // TODO: RAII
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
-	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
 	//---------------------------
 	// Private Member Functions
@@ -111,6 +111,7 @@ private:
 
 	void CreateSwapChain();
 	void CreateImageViews();
+	void CreateFramebuffers();
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
@@ -121,6 +122,5 @@ private:
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
-	void CreateFramebuffers();
 };
 #endif

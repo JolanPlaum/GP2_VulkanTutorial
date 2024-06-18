@@ -68,10 +68,12 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 
 	CreateRenderPass();
+
+	CreateFramebuffers();
+
 	CreatePipelineLayout();
 	CreateGraphicsPipeline();
 
-	CreateFramebuffers();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -554,6 +556,32 @@ void HelloTriangleApplication::CreateImageViews()
 		}
 	}
 }
+void HelloTriangleApplication::CreateFramebuffers()
+{
+	// Allocate enough space for all the swap chain frame buffers
+	m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+
+	// Loop over all the swap chain image views
+	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
+	{
+		// This should be bound to the respective attachment descriptions in the render pass
+		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i] };
+
+		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = m_RenderPass;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
+		framebufferInfo.width = m_SwapChainExtent.width;
+		framebufferInfo.height = m_SwapChainExtent.height;
+		framebufferInfo.layers = 1; // refers to the number of layers inside of each swap chain image
+
+		if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create framebuffer!");
+		}
+	}
+}
 SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice device)
 {
 	SwapChainSupportDetails details;
@@ -906,31 +934,4 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 	}
 
 	return shaderModule;
-}
-
-void HelloTriangleApplication::CreateFramebuffers()
-{
-	// Allocate enough space for all the swap chain frame buffers
-	m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
-
-	// Loop over all the swap chain image views
-	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
-	{
-		// This should be bound to the respective attachment descriptions in the render pass
-		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i] };
-
-		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = m_RenderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = m_SwapChainExtent.width;
-		framebufferInfo.height = m_SwapChainExtent.height;
-		framebufferInfo.layers = 1; // refers to the number of layers inside of each swap chain image
-
-		if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create framebuffer!");
-		}
-	}
 }
