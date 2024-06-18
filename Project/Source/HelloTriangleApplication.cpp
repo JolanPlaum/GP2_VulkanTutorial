@@ -68,6 +68,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 
 	CreateRenderPass();
+	CreatePipelineLayout();
 	CreateGraphicsPipeline();
 
 	CreateFramebuffers();
@@ -707,6 +708,22 @@ void HelloTriangleApplication::CreateRenderPass()
 		throw std::runtime_error("failed to create render pass!");
 	}
 }
+void HelloTriangleApplication::CreatePipelineLayout()
+{
+	// Specify uniform values used in shaders (global values similar to dynamic state variables)
+	// Commonly used to pass the transformation matrix to the vertex shader
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pSetLayouts = nullptr;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	// Create pipeline layout using specified data
+	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create pipeline layout!");
+	}
+}
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Load bytecode for the shaders
@@ -840,22 +857,6 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
-
-
-
-	// Specify uniform values used in shaders (global values similar to dynamic state variables)
-	// Commonly used to pass the transformation matrix to the vertex shader
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-	// Create pipeline layout using specified data
-	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
 
 
 
