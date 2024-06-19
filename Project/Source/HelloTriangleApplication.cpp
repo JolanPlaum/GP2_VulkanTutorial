@@ -13,6 +13,8 @@
 #include <limits>
 #include <algorithm>
 
+#include "GP2_VkShaderModule.h"
+
 
 //-----------------------------------------------------------------
 // Constructors
@@ -909,27 +911,23 @@ void HelloTriangleApplication::CreatePipelineLayout()
 }
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
-	// Load bytecode for the shaders
-	auto vertShaderCode = util::ReadFile("Shaders/shader.vert.spv");
-	auto fragShaderCode = util::ReadFile("Shaders/shader.frag.spv");
-
 	// Create shader modules locally (should be destroyed right after pipeline creation)
-	VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
-	VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
+	GP2_VkShaderModule vertShaderModule{ m_Device, "Shaders/shader.vert.spv" };
+	GP2_VkShaderModule fragShaderModule{ m_Device, "Shaders/shader.frag.spv" };
 
 	// TODO: Shader read up on .pName and .pSpecializationInfo, interesting for custimization of single shader usage
 	// Assign vertex & fragment shader to a specific pipeline stage
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT; // specify pipeline stage
-	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.module = vertShaderModule.Get();
 	vertShaderStageInfo.pName = "main"; // function to invoke (entrypoint), allows for multiple shaders in 1 module
 	vertShaderStageInfo.pSpecializationInfo = nullptr; // specify shader constants, allows for shader behavior configured at pipeline creation
 
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.module = fragShaderModule.Get();
 	fragShaderStageInfo.pName = "main";
 	fragShaderStageInfo.pSpecializationInfo = nullptr;
 
@@ -1067,12 +1065,6 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
-
-
-
-	// Destroy shader modules (should be destroyed right after pipeline creation)
-	vkDestroyShaderModule(m_Device, fragShaderModule, nullptr);
-	vkDestroyShaderModule(m_Device, vertShaderModule, nullptr);
 }
 VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<char>& code)
 {
