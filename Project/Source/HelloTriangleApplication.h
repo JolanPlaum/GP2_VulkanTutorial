@@ -78,6 +78,7 @@ private:
 	std::vector<VkFence> m_InFlightFences; // TODO: RAII
 
 	uint32_t m_CurrentFrame = 0;
+	bool m_IsFramebufferResized = false;
 
 
 	//---------------------------
@@ -89,6 +90,8 @@ private:
 	void Cleanup();
 
 	void DrawFrame();
+
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 	void CreateInstance();
 	bool CheckValidationLayerSupport() const;
@@ -123,6 +126,8 @@ private:
 	void CreateSwapChain();
 	void CreateImageViews();
 	void CreateFramebuffers();
+	void RecreateSwapChain();
+	void CleanupSwapChain();
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);

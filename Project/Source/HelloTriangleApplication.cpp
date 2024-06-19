@@ -47,11 +47,15 @@ void HelloTriangleApplication::InitWindow()
 	// Do not create OpenGL context 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	// TODO: InitWindow enable resizing in final version
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	// Disable resizing
+	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	// Create the actual window
 	m_Window = glfwCreateWindow(config::WIDTH, config::HEIGHT, "Vulkan", nullptr, nullptr);
+	glfwSetWindowUserPointer(m_Window, this);
+
+	// Set up an explicit callback to detect resizes
+	glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
 }
 void HelloTriangleApplication::InitVulkan()
 {
@@ -100,12 +104,10 @@ void HelloTriangleApplication::Cleanup()
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 
-	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+	CleanupSwapChain();
 
 	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
 
-	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
-	vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 	vkDestroyDevice(m_Device, nullptr);
 
 	// Destroyed right before instance to allow for debug messages during cleanup
@@ -124,20 +126,34 @@ void HelloTriangleApplication::DrawFrame()
 {
 	// Wait for the previous frame to finish
 	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
-	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		m_IsFramebufferResized = false;
+		RecreateSwapChain();
+		std::cout << "VK_ERROR_OUT_OF_DATE_KHR\n";
+		return; // TODO: RecreateSwapChain don't quit drawing a frame (look inside function for more info)
+	}
+	else if (result == VK_SUBOPTIMAL_KHR) {
+		std::cout << "VK_SUBOPTIMAL_KHR\n";
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
+	// Reset fence if an image was succesfully acquired
+	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
 
 	// Record a command buffer which draws the scene onto the acquired image
 	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
 	RecordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
 
 	// Submit the recorded command buffer to the GPU
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame]};
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // corresponds to semaphore with same index
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame]};
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
 	VkSubmitInfo submitInfo{};
 	{
 		// TODO: SubmitCommands look into linking waitStages to RenderPass stages automatically
@@ -175,10 +191,24 @@ void HelloTriangleApplication::DrawFrame()
 		presentInfo.pResults = nullptr; // Optional
 	}
 
-	vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+	result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_IsFramebufferResized) {
+		m_IsFramebufferResized = false;
+		RecreateSwapChain();
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("failed to present swap chain image!");
+	}
 
 	// Advance to the next frame
 	++m_CurrentFrame %= config::MAX_FRAMES_IN_FLIGHT;
+}
+
+void HelloTriangleApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	// Only use reinterpret_cast 
+	HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+	app->m_IsFramebufferResized = true;
 }
 
 void HelloTriangleApplication::CreateInstance()
@@ -655,6 +685,37 @@ void HelloTriangleApplication::CreateFramebuffers()
 			throw std::runtime_error("failed to create framebuffer!");
 		}
 	}
+}
+void HelloTriangleApplication::RecreateSwapChain()
+{
+	// Pause rendering while window is minimized
+	int width = 0, height = 0;
+	glfwGetFramebufferSize(m_Window, &width, &height);
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(m_Window, &width, &height);
+		glfwWaitEvents();
+	}
+
+	// Don't touch resources that are still in use
+	// TODO: RecreateSwapChain use oldSwapChain to allow existing swap chain to operate
+	//  while creating a new one (hint: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation#page_Recreating-the-swap-chain )
+	vkDeviceWaitIdle(m_Device);
+
+	// Ensure old versions are correctly cleaned up
+	CleanupSwapChain();
+
+	// Create swap chain and all of the objects that depend on it
+	CreateSwapChain();
+	CreateImageViews();
+	CreateFramebuffers();
+}
+void HelloTriangleApplication::CleanupSwapChain()
+{
+	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+
+	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
+
+	vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
 }
 SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice device)
 {
