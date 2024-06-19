@@ -73,6 +73,10 @@ private:
 	VkCommandPool m_CommandPool; // TODO: RAII
 	VkCommandBuffer m_CommandBuffer;
 
+	VkSemaphore m_ImageAvailableSemaphore; // TODO: RAII
+	VkSemaphore m_RenderFinishedSemaphore; // TODO: RAII
+	VkFence m_InFlightFence; // TODO: RAII
+
 
 	//---------------------------
 	// Private Member Functions
@@ -81,6 +85,8 @@ private:
 	void InitVulkan();
 	void MainLoop();
 	void Cleanup();
+
+	void DrawFrame();
 
 	void CreateInstance();
 	bool CheckValidationLayerSupport() const;
@@ -129,5 +135,8 @@ private:
 	void CreateCommandPool();
 	void AllocateCommandBuffer();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+	void CreateSyncObjects();
+	void DestroySyncObjects();
 };
 #endif

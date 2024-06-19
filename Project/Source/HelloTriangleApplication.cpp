@@ -76,6 +76,8 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateCommandPool();
 	AllocateCommandBuffer();
+
+	CreateSyncObjects();
 }
 void HelloTriangleApplication::MainLoop()
 {
@@ -83,10 +85,16 @@ void HelloTriangleApplication::MainLoop()
 	while (!glfwWindowShouldClose(m_Window))
 	{
 		glfwPollEvents();
+		DrawFrame();
 	}
+
+	// Wait for operations to finish before exiting
+	vkDeviceWaitIdle(m_Device);
 }
 void HelloTriangleApplication::Cleanup()
 {
+	DestroySyncObjects();
+
 	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
@@ -110,6 +118,64 @@ void HelloTriangleApplication::Cleanup()
 	// GLFW window
 	glfwDestroyWindow(m_Window);
 	glfwTerminate();
+}
+
+void HelloTriangleApplication::DrawFrame()
+{
+	// Wait for the previous frame to finish
+	vkWaitForFences(m_Device, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(m_Device, 1, &m_InFlightFence);
+
+	// Acquire an image from the swap chain
+	uint32_t imageIndex{};
+	vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+	// Record a command buffer which draws the scene onto the acquired image
+	vkResetCommandBuffer(m_CommandBuffer, 0);
+	RecordCommandBuffer(m_CommandBuffer, imageIndex);
+
+	// Submit the recorded command buffer to the GPU
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // corresponds to semaphore with same index
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+	VkSubmitInfo submitInfo{};
+	{
+		// TODO: SubmitCommands look into linking waitStages to RenderPass stages automatically
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &m_CommandBuffer;
+
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+	}
+
+	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFence) != VK_SUCCESS) {
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+	// Present the swap chain image to the screen
+	VkPresentInfoKHR presentInfo{};
+	{
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
+
+		VkSwapchainKHR swapChains[] = { m_SwapChain };
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = swapChains;
+		presentInfo.pImageIndices = &imageIndex; // image for each swap chain in pSwapchains
+
+		// Specify array of VkResults
+		presentInfo.pResults = nullptr; // Optional
+	}
+
+	vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 }
 
 void HelloTriangleApplication::CreateInstance()
@@ -259,7 +325,7 @@ void HelloTriangleApplication::PopulateDebugMessengerCreateInfo(VkDebugUtilsMess
 	// Info about messenger and its callback
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.messageType =  VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = HelloTriangleApplication::DebugCallback;
 	createInfo.pUserData = nullptr; // Optional // Example: pass a pointer to HelloTriangleApplication class
 }
@@ -728,6 +794,23 @@ void HelloTriangleApplication::CreateRenderPass()
 		subpass.pPreserveAttachments = nullptr;
 	}
 
+	// Subpass dependency
+	VkSubpassDependency dependency{};
+	{
+		// Specify index of dependancy and dependant subpass
+		// dstSubpass must always be higher than srcSubpass (exception: VK_SUBPASS_EXTERNAL)
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // subpass this dependency depends on
+		dependency.dstSubpass = 0; // subpass that is dependant on the dependancy
+
+		// ???
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		// ???
+		dependency.srcAccessMask = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	}
+
 
 	// Create the render pass using the attachments and subpasses
 	VkRenderPassCreateInfo renderPassInfo{};
@@ -736,6 +819,8 @@ void HelloTriangleApplication::CreateRenderPass()
 	renderPassInfo.pAttachments = &colorAttachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
 
 	if (vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create render pass!");
@@ -1005,6 +1090,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		// Bind graphics pipeline
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
+		// TODO: DynamicState make a big automatic switch to check the dynamic states of the given pipeline and set those values
 		// SET DYNAMIC STATES !!!!! this will depend on what was chosen as dynamic state
 		{
 			VkViewport viewport{};
@@ -1031,4 +1117,29 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
 	}
+}
+
+void HelloTriangleApplication::CreateSyncObjects()
+{
+	// Doesn't have any required fields in the current version of API
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	// Doesn't have any required fields in the current version of API
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start fence signaled so the first draw call isn't blocked
+
+	// Create semaphores and fences
+	if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore) != VK_SUCCESS ||
+		vkCreateFence(m_Device, &fenceInfo, nullptr, &m_InFlightFence) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create semaphores!");
+	}
+}
+void HelloTriangleApplication::DestroySyncObjects()
+{
+	vkDestroySemaphore(m_Device, m_ImageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(m_Device, m_RenderFinishedSemaphore, nullptr);
+	vkDestroyFence(m_Device, m_InFlightFence, nullptr);
 }
