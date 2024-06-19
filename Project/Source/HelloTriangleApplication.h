@@ -71,11 +71,13 @@ private:
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
 	VkCommandPool m_CommandPool; // TODO: RAII
-	VkCommandBuffer m_CommandBuffer;
+	std::vector<VkCommandBuffer> m_CommandBuffers;
 
-	VkSemaphore m_ImageAvailableSemaphore; // TODO: RAII
-	VkSemaphore m_RenderFinishedSemaphore; // TODO: RAII
-	VkFence m_InFlightFence; // TODO: RAII
+	std::vector<VkSemaphore> m_ImageAvailableSemaphores; // TODO: RAII
+	std::vector<VkSemaphore> m_RenderFinishedSemaphores; // TODO: RAII
+	std::vector<VkFence> m_InFlightFences; // TODO: RAII
+
+	uint32_t m_CurrentFrame = 0;
 
 
 	//---------------------------
@@ -133,7 +135,7 @@ private:
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void CreateCommandPool();
-	void AllocateCommandBuffer();
+	void AllocateCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void CreateSyncObjects();
