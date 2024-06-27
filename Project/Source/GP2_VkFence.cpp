@@ -19,7 +19,7 @@ GP2_VkFence::GP2_VkFence(const VkDevice& device, bool signaled)
 
 	// Create fence
 	if (vkCreateFence(m_Device, &fenceInfo, nullptr, &m_Fence) != VK_SUCCESS)
-		throw std::runtime_error("failed to create shader module!");
+		throw std::runtime_error("failed to create fence!");
 }
 
 GP2_VkFence::GP2_VkFence(GP2_VkFence&& other) noexcept
@@ -35,7 +35,7 @@ GP2_VkFence& GP2_VkFence::operator=(GP2_VkFence&& other) noexcept
 	// Exit early if same object
 	if (this != &other)
 	{
-		// Destroy previously owned fence
+		// Destroy previously owned resource
 		vkDestroyFence(m_Device, m_Fence, nullptr);
 
 		// Assign new data

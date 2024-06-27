@@ -27,6 +27,32 @@ GP2_VkShaderModule::GP2_VkShaderModule(const VkDevice& device, const std::string
 		throw std::runtime_error("failed to create shader module!");
 }
 
+GP2_VkShaderModule::GP2_VkShaderModule(GP2_VkShaderModule&& other) noexcept
+	: m_Device{ other.m_Device }
+	, m_ShaderModule{ other.m_ShaderModule }
+{
+	// Make other object invalid
+	other.m_ShaderModule = nullptr;
+}
+
+GP2_VkShaderModule& GP2_VkShaderModule::operator=(GP2_VkShaderModule&& other) noexcept
+{
+	// Exit early if same object
+	if (this != &other)
+	{
+		// Destroy previously owned resource
+		vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
+
+		// Assign new data
+		m_Device = other.m_Device;
+		m_ShaderModule = other.m_ShaderModule;
+
+		// Make other object invalid
+		other.m_ShaderModule = nullptr;
+	}
+	return *this;
+}
+
 
 //-----------------------------------------------------------------
 // Destructor
@@ -40,7 +66,7 @@ GP2_VkShaderModule::~GP2_VkShaderModule()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkShaderModule GP2_VkShaderModule::Get() const
+VkShaderModule& GP2_VkShaderModule::Get()
 {
 	return m_ShaderModule;
 }

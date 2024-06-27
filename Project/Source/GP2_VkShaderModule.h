@@ -18,13 +18,13 @@ public:
 	// Copy and Move semantics
 	GP2_VkShaderModule(const GP2_VkShaderModule& other)					= delete;
 	GP2_VkShaderModule& operator=(const GP2_VkShaderModule& other)		= delete;
-	GP2_VkShaderModule(GP2_VkShaderModule&& other) noexcept				= delete;
-	GP2_VkShaderModule& operator=(GP2_VkShaderModule&& other) noexcept	= delete;
+	GP2_VkShaderModule(GP2_VkShaderModule&& other) noexcept				;
+	GP2_VkShaderModule& operator=(GP2_VkShaderModule&& other) noexcept	;
 
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkShaderModule Get() const;
+	VkShaderModule& Get();
 
 
 private:

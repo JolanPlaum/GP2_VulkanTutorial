@@ -11,7 +11,7 @@ class GP2_VkFence final
 {
 public:
 	// Constructors and Destructor
-	GP2_VkFence(const VkDevice& device, bool signaled);
+	GP2_VkFence(const VkDevice& device, bool signaled = false);
 	~GP2_VkFence();
 	
 	// Copy and Move semantics
