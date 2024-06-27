@@ -784,7 +784,7 @@ VkPresentModeKHR HelloTriangleApplication::ChooseSwapPresentMode(const std::vect
 }
 VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
-	// Exit early if ???
+	// Exit early if it has already been filled in (max is the default value)
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
