@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include <vector>
 #include <optional>
+#include "Source/GP2_VkFence.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -75,7 +76,7 @@ private:
 
 	std::vector<VkSemaphore> m_ImageAvailableSemaphores; // TODO: RAII
 	std::vector<VkSemaphore> m_RenderFinishedSemaphores; // TODO: RAII
-	std::vector<VkFence> m_InFlightFences; // TODO: RAII
+	std::vector<GP2_VkFence> m_InFlightFences;
 
 	uint32_t m_CurrentFrame = 0;
 	bool m_IsFramebufferResized = false;

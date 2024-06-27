@@ -127,7 +127,7 @@ void HelloTriangleApplication::Cleanup()
 void HelloTriangleApplication::DrawFrame()
 {
 	// Wait for the previous frame to finish
-	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
+	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame].Get(), VK_TRUE, UINT64_MAX);
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
@@ -146,7 +146,7 @@ void HelloTriangleApplication::DrawFrame()
 	}
 
 	// Reset fence if an image was succesfully acquired
-	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame]);
+	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame].Get());
 
 	// Record a command buffer which draws the scene onto the acquired image
 	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
@@ -172,7 +172,7 @@ void HelloTriangleApplication::DrawFrame()
 		submitInfo.pSignalSemaphores = signalSemaphores;
 	}
 
-	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS) {
+	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame].Get()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -1184,24 +1184,22 @@ void HelloTriangleApplication::CreateSyncObjects()
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	// Doesn't have any required fields in the current version of API
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start fence signaled so the first draw call isn't blocked
-
 	// Allocate enough space
 	m_ImageAvailableSemaphores.resize(config::MAX_FRAMES_IN_FLIGHT);
 	m_RenderFinishedSemaphores.resize(config::MAX_FRAMES_IN_FLIGHT);
-	m_InFlightFences.resize(config::MAX_FRAMES_IN_FLIGHT);
+	m_InFlightFences.reserve(config::MAX_FRAMES_IN_FLIGHT);
 
 	// Create semaphores and fences
 	for (uint32_t i{}; i < config::MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(m_Device, &fenceInfo, nullptr, &m_InFlightFences[i]) != VK_SUCCESS) {
+			false) {
 			throw std::runtime_error("failed to create synchronization objects for a frame!");
 		}
+
+		// Start fences signaled so the first draw call isn't blocked
+		m_InFlightFences.push_back({ m_Device, true });
 	}
 }
 void HelloTriangleApplication::DestroySyncObjects()
@@ -1210,6 +1208,7 @@ void HelloTriangleApplication::DestroySyncObjects()
 	{
 		vkDestroySemaphore(m_Device, m_ImageAvailableSemaphores[i], nullptr);
 		vkDestroySemaphore(m_Device, m_RenderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(m_Device, m_InFlightFences[i], nullptr);
 	}
+
+	m_InFlightFences.clear();
 }
