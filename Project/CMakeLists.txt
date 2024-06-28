@@ -30,6 +30,7 @@ set(SOURCES
     "Source/HelloTriangleApplication.h" "Source/HelloTriangleApplication.cpp"
     "Source/GP2_VkShaderModule.h" "Source/GP2_VkShaderModule.cpp"
     "Source/GP2_VkFence.h" "Source/GP2_VkFence.cpp"
+    "Source/GP2_VkSemaphore.h" "Source/GP2_VkSemaphore.cpp"
 )
 
 # Create the executable

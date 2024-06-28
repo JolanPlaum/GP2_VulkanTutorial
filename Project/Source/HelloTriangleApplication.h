@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include "Source/GP2_VkFence.h"
+#include "Source/GP2_VkSemaphore.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -74,8 +75,8 @@ private:
 	VkCommandPool m_CommandPool; // TODO: RAII
 	std::vector<VkCommandBuffer> m_CommandBuffers;
 
-	std::vector<VkSemaphore> m_ImageAvailableSemaphores; // TODO: RAII
-	std::vector<VkSemaphore> m_RenderFinishedSemaphores; // TODO: RAII
+	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
+	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;
 	std::vector<GP2_VkFence> m_InFlightFences;
 
 	uint32_t m_CurrentFrame = 0;

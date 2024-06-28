@@ -131,7 +131,7 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -153,9 +153,9 @@ void HelloTriangleApplication::DrawFrame()
 	RecordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
 
 	// Submit the recorded command buffer to the GPU
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame].Get() };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // corresponds to semaphore with same index
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame].Get() };
 	VkSubmitInfo submitInfo{};
 	{
 		// TODO: SubmitCommands look into linking waitStages to RenderPass stages automatically
@@ -1180,35 +1180,29 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 
 void HelloTriangleApplication::CreateSyncObjects()
 {
-	// Doesn't have any required fields in the current version of API
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
 	// Allocate enough space
-	m_ImageAvailableSemaphores.resize(config::MAX_FRAMES_IN_FLIGHT);
-	m_RenderFinishedSemaphores.resize(config::MAX_FRAMES_IN_FLIGHT);
+	m_ImageAvailableSemaphores.reserve(config::MAX_FRAMES_IN_FLIGHT);
+	m_RenderFinishedSemaphores.reserve(config::MAX_FRAMES_IN_FLIGHT);
 	m_InFlightFences.reserve(config::MAX_FRAMES_IN_FLIGHT);
 
 	// Create semaphores and fences
 	for (uint32_t i{}; i < config::MAX_FRAMES_IN_FLIGHT; ++i)
 	{
-		if (vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(m_Device, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphores[i]) != VK_SUCCESS ||
-			false) {
+		try {
+			m_ImageAvailableSemaphores.push_back({ m_Device });
+			m_RenderFinishedSemaphores.push_back({ m_Device });
+
+			// Start fences signaled so the first draw call isn't blocked
+			m_InFlightFences.push_back({ m_Device, true });
+		}
+		catch (const std::exception& e) {
 			throw std::runtime_error("failed to create synchronization objects for a frame!");
 		}
-
-		// Start fences signaled so the first draw call isn't blocked
-		m_InFlightFences.push_back({ m_Device, true });
 	}
 }
 void HelloTriangleApplication::DestroySyncObjects()
 {
-	for (uint32_t i{}; i < config::MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		vkDestroySemaphore(m_Device, m_ImageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(m_Device, m_RenderFinishedSemaphores[i], nullptr);
-	}
-
+	m_ImageAvailableSemaphores.clear();
+	m_RenderFinishedSemaphores.clear();
 	m_InFlightFences.clear();
 }
