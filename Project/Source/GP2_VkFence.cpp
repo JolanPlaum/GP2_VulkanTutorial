@@ -13,12 +13,12 @@ GP2_VkFence::GP2_VkFence(const VkDevice& device, bool signaled)
 	, m_Fence{}
 {
 	// Doesn't have any required fields in the current version of API
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT * signaled;
+	VkFenceCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT * signaled;
 
 	// Create fence
-	if (vkCreateFence(m_Device, &fenceInfo, nullptr, &m_Fence) != VK_SUCCESS)
+	if (vkCreateFence(m_Device, &createInfo, nullptr, &m_Fence) != VK_SUCCESS)
 		throw std::runtime_error("failed to create fence!");
 }
 
