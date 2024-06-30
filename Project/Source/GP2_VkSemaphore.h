@@ -1,5 +1,5 @@
-#ifndef GP2VKT_GP2_VkSemaphore_H_
-#define GP2VKT_GP2_VkSemaphore_H_
+#ifndef GP2VKT_GP2_VKSEMAPHORE_H_
+#define GP2VKT_GP2_VKSEMAPHORE_H_
 // Includes
 #include <vulkan/vulkan_core.h>
 
