@@ -101,7 +101,7 @@ void HelloTriangleApplication::Cleanup()
 {
 	DestroySyncObjects();
 
-	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+	m_pCommandPool = nullptr;
 
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
@@ -1088,15 +1088,7 @@ void HelloTriangleApplication::CreateCommandPool()
 	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
 	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
 
-	// A pool can only allocate command buffers on a single type of queue
-	VkCommandPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.GraphicsFamily.value();
-
-	if (vkCreateCommandPool(m_Device, &poolInfo, nullptr, &m_CommandPool) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create command pool!");
-	}
+	m_pCommandPool = std::make_unique<GP2_VkCommandPool>(m_Device, queueFamilyIndices.GraphicsFamily.value());
 }
 void HelloTriangleApplication::AllocateCommandBuffers()
 {
@@ -1105,7 +1097,7 @@ void HelloTriangleApplication::AllocateCommandBuffers()
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = m_CommandPool;
+	allocInfo.commandPool = m_pCommandPool->Get();
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 

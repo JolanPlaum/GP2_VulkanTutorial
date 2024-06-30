@@ -4,8 +4,10 @@
 #include <vulkan/vulkan_core.h>
 #include <vector>
 #include <optional>
+#include <memory>
 #include "Source/GP2_VkFence.h"
 #include "Source/GP2_VkSemaphore.h"
+#include "Source/GP2_VkCommandPool.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -72,7 +74,7 @@ private:
 	VkPipelineLayout m_PipelineLayout; // TODO: RAII
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
-	VkCommandPool m_CommandPool; // TODO: RAII
+	std::unique_ptr<GP2_VkCommandPool> m_pCommandPool;
 	std::vector<VkCommandBuffer> m_CommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;

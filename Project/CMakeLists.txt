@@ -31,6 +31,7 @@ set(SOURCES
     "Source/GP2_VkShaderModule.h" "Source/GP2_VkShaderModule.cpp"
     "Source/GP2_VkFence.h" "Source/GP2_VkFence.cpp"
     "Source/GP2_VkSemaphore.h" "Source/GP2_VkSemaphore.cpp"
+    "Source/GP2_VkCommandPool.h" "Source/GP2_VkCommandPool.cpp"
 )
 
 # Create the executable
