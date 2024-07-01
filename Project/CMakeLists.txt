@@ -17,7 +17,7 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
     )
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
-
+ 
 add_custom_target(
     Shaders
     DEPENDS ${SPIRV_BINARY_FILES}
@@ -32,6 +32,7 @@ set(SOURCES
     "Source/GP2_VkFence.h" "Source/GP2_VkFence.cpp"
     "Source/GP2_VkSemaphore.h" "Source/GP2_VkSemaphore.cpp"
     "Source/GP2_VkCommandPool.h" "Source/GP2_VkCommandPool.cpp"
+    "Source/GP2_VkPipelineLayout.h" "Source/GP2_VkPipelineLayout.cpp"
 )
 
 # Create the executable

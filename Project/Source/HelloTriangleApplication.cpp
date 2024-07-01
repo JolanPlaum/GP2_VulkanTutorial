@@ -77,7 +77,7 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateFramebuffers();
 
-	CreatePipelineLayout();
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_Device);
 	CreateGraphicsPipeline();
 
 	CreateCommandPool();
@@ -104,7 +104,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pCommandPool = nullptr;
 
 	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+	m_pPipelineLayout = nullptr;
 
 	CleanupSwapChain();
 
@@ -893,22 +893,6 @@ void HelloTriangleApplication::CreateRenderPass()
 	}
 }
 
-void HelloTriangleApplication::CreatePipelineLayout()
-{
-	// Specify uniform values used in shaders (global values similar to dynamic state variables)
-	// Commonly used to pass the transformation matrix to the vertex shader
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-	// Create pipeline layout using specified data
-	if (vkCreatePipelineLayout(m_Device, &pipelineLayoutInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
-}
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
@@ -1055,7 +1039,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.pDepthStencilState = nullptr; // Optional
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = m_PipelineLayout;
+	pipelineInfo.layout = m_pPipelineLayout->Get();
 	pipelineInfo.renderPass = m_RenderPass;
 	pipelineInfo.subpass = 0; // index of the subpass where this pipeline will be used
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag

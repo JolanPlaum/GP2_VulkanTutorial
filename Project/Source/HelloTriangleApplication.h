@@ -8,6 +8,7 @@
 #include "Source/GP2_VkFence.h"
 #include "Source/GP2_VkSemaphore.h"
 #include "Source/GP2_VkCommandPool.h"
+#include "Source/GP2_VkPipelineLayout.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -71,7 +72,7 @@ private:
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
 	VkRenderPass m_RenderPass; // TODO: RAII
-	VkPipelineLayout m_PipelineLayout; // TODO: RAII
+	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
 	std::unique_ptr<GP2_VkCommandPool> m_pCommandPool;
@@ -139,7 +140,6 @@ private:
 
 	void CreateRenderPass();
 
-	void CreatePipelineLayout();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
