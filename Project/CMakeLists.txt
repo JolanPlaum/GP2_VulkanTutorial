@@ -28,11 +28,13 @@ set(SOURCES
     "main.cpp"
     "Utils.h"
     "Source/HelloTriangleApplication.h" "Source/HelloTriangleApplication.cpp"
+
     "Source/GP2_VkShaderModule.h" "Source/GP2_VkShaderModule.cpp"
     "Source/GP2_VkFence.h" "Source/GP2_VkFence.cpp"
     "Source/GP2_VkSemaphore.h" "Source/GP2_VkSemaphore.cpp"
     "Source/GP2_VkCommandPool.h" "Source/GP2_VkCommandPool.cpp"
     "Source/GP2_VkPipelineLayout.h" "Source/GP2_VkPipelineLayout.cpp"
+    "Source/GP2_VkRenderPass.h" "Source/GP2_VkRenderPass.cpp"
 )
 
 # Create the executable

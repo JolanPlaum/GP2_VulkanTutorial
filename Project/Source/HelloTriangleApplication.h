@@ -9,6 +9,7 @@
 #include "Source/GP2_VkSemaphore.h"
 #include "Source/GP2_VkCommandPool.h"
 #include "Source/GP2_VkPipelineLayout.h"
+#include "Source/GP2_VkRenderPass.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -71,7 +72,7 @@ private:
 	std::vector<VkImageView> m_SwapChainImageViews;
 	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
 
-	VkRenderPass m_RenderPass; // TODO: RAII
+	std::unique_ptr<GP2_VkRenderPass> m_pRenderPass;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 

@@ -108,7 +108,7 @@ void HelloTriangleApplication::Cleanup()
 
 	CleanupSwapChain();
 
-	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr); // destroy after pipeline as it's dependant
+	m_pRenderPass = nullptr;
 
 	vkDestroyDevice(m_Device, nullptr);
 
@@ -676,7 +676,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = m_RenderPass;
+		framebufferInfo.renderPass = m_pRenderPass->Get();
 		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = m_SwapChainExtent.width;
@@ -877,20 +877,7 @@ void HelloTriangleApplication::CreateRenderPass()
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	}
 
-
-	// Create the render pass using the attachments and subpasses
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
-
-	if (vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &m_RenderPass) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create render pass!");
-	}
+	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_Device, std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
 }
 
 void HelloTriangleApplication::CreateGraphicsPipeline()
@@ -1040,7 +1027,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = m_pPipelineLayout->Get();
-	pipelineInfo.renderPass = m_RenderPass;
+	pipelineInfo.renderPass = m_pRenderPass->Get();
 	pipelineInfo.subpass = 0; // index of the subpass where this pipeline will be used
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
@@ -1106,7 +1093,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	VkRenderPassBeginInfo renderPassInfo{};
 	{
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_RenderPass;
+		renderPassInfo.renderPass = m_pRenderPass->Get();
 		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
 
 		// Define where shader loads/stores take place, should match size of attachments for best performance
