@@ -11,7 +11,7 @@ class GP2_VkCommandPool final
 {
 public:
 	// Constructors and Destructor
-	explicit GP2_VkCommandPool(const VkDevice& device, uint32_t queueFamilyIndex);
+	GP2_VkCommandPool(const VkDevice& device, uint32_t queueFamilyIndex);
 	~GP2_VkCommandPool();
 	
 	// Copy and Move semantics
