@@ -10,6 +10,7 @@
 #include "Source/GP2_VkCommandPool.h"
 #include "Source/GP2_VkPipelineLayout.h"
 #include "Source/GP2_VkRenderPass.h"
+#include "Source/GP2_VkSwapchainKHR.h"
 
 // Class Forward Declarations
 class GLFWwindow;
@@ -65,7 +66,7 @@ private:
 	VkQueue m_GraphicsQueue; // TODO: RAII
 	VkQueue m_PresentQueue; // TODO: RAII
 
-	VkSwapchainKHR m_SwapChain; // TODO: RAII
+	std::unique_ptr<GP2_VkSwapchainKHR> m_pSwapChain;
 	std::vector<VkImage> m_SwapChainImages;
 	VkFormat m_SwapChainImageFormat;
 	VkExtent2D m_SwapChainExtent;

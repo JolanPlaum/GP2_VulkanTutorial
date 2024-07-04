@@ -35,6 +35,7 @@ set(SOURCES
     "Source/GP2_VkCommandPool.h" "Source/GP2_VkCommandPool.cpp"
     "Source/GP2_VkPipelineLayout.h" "Source/GP2_VkPipelineLayout.cpp"
     "Source/GP2_VkRenderPass.h" "Source/GP2_VkRenderPass.cpp"
+    "Source/GP2_VkSwapchainKHR.h" "Source/GP2_VkSwapchainKHR.cpp"
 )
 
 # Create the executable

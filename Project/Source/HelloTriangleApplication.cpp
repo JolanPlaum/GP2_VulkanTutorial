@@ -131,7 +131,7 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_Device, m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -184,7 +184,7 @@ void HelloTriangleApplication::DrawFrame()
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { m_SwapChain };
+		VkSwapchainKHR swapChains[] = { m_pSwapChain->Get() };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex; // image for each swap chain in pSwapchains
@@ -611,17 +611,14 @@ void HelloTriangleApplication::CreateSwapChain()
 		createInfo.oldSwapchain = VK_NULL_HANDLE; // it's possible the swap chain becomes invalid/unoptimized (e.g. window was resized)
 	}
 
-	// Create swap chain using specified data
-	if (vkCreateSwapchainKHR(m_Device, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create swap chain!");
-	}
+	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(m_Device, createInfo);
 
 	// Get the final number of images
-	vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_Device, m_pSwapChain->Get(), &imageCount, nullptr);
 
 	// Allocate an array to hold all the swap chain images
 	m_SwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(m_Device, m_SwapChain, &imageCount, m_SwapChainImages.data());
+	vkGetSwapchainImagesKHR(m_Device, m_pSwapChain->Get(), &imageCount, m_SwapChainImages.data());
 
 	// Store the format and extent that was chosen, these will be needed later on
 	m_SwapChainImageFormat = surfaceFormat.format;
@@ -717,7 +714,7 @@ void HelloTriangleApplication::CleanupSwapChain()
 
 	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
 
-	vkDestroySwapchainKHR(m_Device, m_SwapChain, nullptr);
+	m_pSwapChain = nullptr;
 }
 SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice device)
 {
