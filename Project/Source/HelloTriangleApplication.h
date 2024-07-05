@@ -70,8 +70,8 @@ private:
 	std::vector<VkImage> m_SwapChainImages;
 	VkFormat m_SwapChainImageFormat;
 	VkExtent2D m_SwapChainExtent;
-	std::vector<VkImageView> m_SwapChainImageViews;
-	std::vector<VkFramebuffer> m_SwapChainFramebuffers;
+	std::vector<VkImageView> m_SwapChainImageViews; // TODO: RAII
+	std::vector<VkFramebuffer> m_SwapChainFramebuffers; // TODO: RAII
 
 	std::unique_ptr<GP2_VkRenderPass> m_pRenderPass;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
