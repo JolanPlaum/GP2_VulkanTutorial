@@ -627,36 +627,12 @@ void HelloTriangleApplication::CreateSwapChain()
 void HelloTriangleApplication::CreateImageViews()
 {
 	// Allocate enough space for all the swap chain image views
-	m_SwapChainImageViews.resize(m_SwapChainImages.size());
+	m_SwapChainImageViews.reserve(m_SwapChainImages.size());
 
 	// Loop over all the swap chain images
 	for (size_t i{ 0 }; i < m_SwapChainImages.size(); ++i)
 	{
-		VkImageViewCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		createInfo.image = m_SwapChainImages[i];
-
-		// Specify how the image data should be interpreted
-		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo.format = m_SwapChainImageFormat;
-
-		// Specify color channel swizzling
-		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		// Describe the image purpose & which part to access
-		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo.subresourceRange.baseMipLevel = 0;
-		createInfo.subresourceRange.levelCount = 1;
-		createInfo.subresourceRange.baseArrayLayer = 0;
-		createInfo.subresourceRange.layerCount = 1;
-
-		// Create image view using specified data
-		if (vkCreateImageView(m_Device, &createInfo, nullptr, &m_SwapChainImageViews[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create image views!");
-		}
+		m_SwapChainImageViews.push_back({ m_Device, m_SwapChainImages[i], m_SwapChainImageFormat });
 	}
 }
 void HelloTriangleApplication::CreateFramebuffers()
@@ -668,7 +644,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
 	{
 		// This should be bound to the respective attachment descriptions in the render pass
-		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i] };
+		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i].Get() };
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		VkFramebufferCreateInfo framebufferInfo{};
@@ -712,7 +688,7 @@ void HelloTriangleApplication::CleanupSwapChain()
 {
 	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
 
-	for (auto imageView : m_SwapChainImageViews) { vkDestroyImageView(m_Device, imageView, nullptr); }
+	m_SwapChainImageViews.clear();
 
 	m_pSwapChain = nullptr;
 }
