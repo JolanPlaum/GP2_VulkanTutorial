@@ -638,7 +638,7 @@ void HelloTriangleApplication::CreateImageViews()
 void HelloTriangleApplication::CreateFramebuffers()
 {
 	// Allocate enough space for all the swap chain frame buffers
-	m_SwapChainFramebuffers.resize(m_SwapChainImageViews.size());
+	m_SwapChainFramebuffers.reserve(m_SwapChainImageViews.size());
 
 	// Loop over all the swap chain image views
 	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
@@ -647,18 +647,8 @@ void HelloTriangleApplication::CreateFramebuffers()
 		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i].Get() };
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = m_pRenderPass->Get();
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = m_SwapChainExtent.width;
-		framebufferInfo.height = m_SwapChainExtent.height;
-		framebufferInfo.layers = 1; // refers to the number of layers inside of each swap chain image
-
-		if (vkCreateFramebuffer(m_Device, &framebufferInfo, nullptr, &m_SwapChainFramebuffers[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create framebuffer!");
-		}
+		//  layerCount refers to the number of layers inside of each swap chain image
+		m_SwapChainFramebuffers.push_back({ m_Device, m_pRenderPass->Get(), attachments, m_SwapChainExtent, 1 });
 	}
 }
 void HelloTriangleApplication::RecreateSwapChain()
@@ -686,7 +676,7 @@ void HelloTriangleApplication::RecreateSwapChain()
 }
 void HelloTriangleApplication::CleanupSwapChain()
 {
-	for (auto framebuffer : m_SwapChainFramebuffers) { vkDestroyFramebuffer(m_Device, framebuffer, nullptr); }
+	m_SwapChainFramebuffers.clear();
 
 	m_SwapChainImageViews.clear();
 
@@ -1067,7 +1057,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	{
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_pRenderPass->Get();
-		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
+		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex].Get();
 
 		// Define where shader loads/stores take place, should match size of attachments for best performance
 		renderPassInfo.renderArea.offset = { 0, 0 };
