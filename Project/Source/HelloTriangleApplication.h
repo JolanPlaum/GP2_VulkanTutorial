@@ -13,9 +13,10 @@
 #include "Source/GP2_VkSwapchainKHR.h"
 #include "Source/GP2_VkImageView.h"
 #include "Source/GP2_VkFramebuffer.h"
+#include "Source/GP2_VkSurfaceKHR.h"
 
 // Class Forward Declarations
-class GLFWwindow;
+struct GLFWwindow;
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> GraphicsFamily;
@@ -60,13 +61,13 @@ private:
 
 	VkInstance m_Instance; // TODO: RAII
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
-	VkSurfaceKHR m_Surface; // TODO: RAII
+	std::unique_ptr<GP2_VkSurfaceKHR> m_pSurface;
 
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
 	VkDevice m_Device; // TODO: RAII
 
-	VkQueue m_GraphicsQueue; // TODO: RAII
-	VkQueue m_PresentQueue; // TODO: RAII
+	VkQueue m_GraphicsQueue;
+	VkQueue m_PresentQueue;
 
 	std::unique_ptr<GP2_VkSwapchainKHR> m_pSwapChain;
 	std::vector<VkImage> m_SwapChainImages;
@@ -123,8 +124,6 @@ private:
 		VkDebugUtilsMessengerEXT debugMessenger,
 		const VkAllocationCallbacks* pAllocator);
 
-	void CreateSurface();
-
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
 	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
@@ -137,7 +136,7 @@ private:
 	void CreateFramebuffers();
 	void RecreateSwapChain();
 	void CleanupSwapChain();
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);

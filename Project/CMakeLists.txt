@@ -38,6 +38,7 @@ set(SOURCES
     "Source/GP2_VkSwapchainKHR.h" "Source/GP2_VkSwapchainKHR.cpp"
     "Source/GP2_VkImageView.h" "Source/GP2_VkImageView.cpp"
     "Source/GP2_VkFramebuffer.h" "Source/GP2_VkFramebuffer.cpp"
+    "Source/GP2_VkSurfaceKHR.h" "Source/GP2_VkSurfaceKHR.cpp"
 )
 
 # Create the executable

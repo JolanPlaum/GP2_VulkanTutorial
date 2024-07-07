@@ -64,7 +64,7 @@ void HelloTriangleApplication::InitVulkan()
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
-	CreateSurface(); // can affect physical device selection
+	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_Instance, m_Window); // can affect physical device selection
 
 	// Physical and logical device setup
 	PickPhysicalDevice();
@@ -116,7 +116,7 @@ void HelloTriangleApplication::Cleanup()
 	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 	// Instance should be cleaned up last
-	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+	m_pSurface = nullptr;
 	vkDestroyInstance(m_Instance, nullptr);
 
 	// GLFW window
@@ -394,14 +394,6 @@ void HelloTriangleApplication::DestroyDebugUtilsMessengerEXT(VkInstance instance
 	}
 }
 
-void HelloTriangleApplication::CreateSurface()
-{
-	// Create surface
-	if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!");
-	}
-}
-
 void HelloTriangleApplication::PickPhysicalDevice()
 {
 	// Get the number of graphics cards available
@@ -440,7 +432,7 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 
 	bool swapChainAdequate = false;
 	if (extensionsSupported) {
-		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device, m_pSurface->Get());
 		swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 	}
 
@@ -468,7 +460,7 @@ QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice 
 		}
 
 		VkBool32 presentSupport{ false };
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_Surface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_pSurface->Get(), &presentSupport);
 		if (presentSupport) {
 			indices.PresentFamily = i;
 		}
@@ -561,7 +553,7 @@ void HelloTriangleApplication::CreateLogicalDevice()
 void HelloTriangleApplication::CreateSwapChain()
 {
 	// Get swap chain details for chosen physical device
-	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice);
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice, m_pSurface->Get());
 
 	// Choose the right settings for the swap chain
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
@@ -579,7 +571,7 @@ void HelloTriangleApplication::CreateSwapChain()
 	VkSwapchainCreateInfoKHR createInfo{};
 	{
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = m_Surface;
+		createInfo.surface = m_pSurface->Get();
 
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
@@ -682,23 +674,23 @@ void HelloTriangleApplication::CleanupSwapChain()
 
 	m_pSwapChain = nullptr;
 }
-SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice device)
+SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
 	SwapChainSupportDetails details;
 
 	// Basic surface capabilities
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_Surface, &details.Capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.Capabilities);
 
 	// Surface formats
 	{
 		// Get the number of formats available
 		uint32_t formatCount{ 0 };
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
 		// Allocate enough space & get available formats
 		if (formatCount != 0) {
 			details.Formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, details.Formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.Formats.data());
 		}
 	}
 
@@ -706,12 +698,12 @@ SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysic
 	{
 		// Get the number of present modes available
 		uint32_t presentModeCount{ 0 };
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 
 		// Allocate enough space & get available present modes
 		if (presentModeCount != 0) {
 			details.PresentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &presentModeCount, details.PresentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.PresentModes.data());
 		}
 	}
 
