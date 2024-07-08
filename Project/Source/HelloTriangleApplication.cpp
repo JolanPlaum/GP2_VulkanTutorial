@@ -64,7 +64,7 @@ void HelloTriangleApplication::InitVulkan()
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
-	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_Instance, m_Window); // can affect physical device selection
+	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_pInstance->Get(), m_Window); // can affect physical device selection
 
 	// Physical and logical device setup
 	PickPhysicalDevice();
@@ -113,11 +113,11 @@ void HelloTriangleApplication::Cleanup()
 	vkDestroyDevice(m_Device, nullptr);
 
 	// Destroyed right before instance to allow for debug messages during cleanup
-	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_pInstance->Get(), m_DebugMessenger, nullptr);
 
 	// Instance should be cleaned up last
 	m_pSurface = nullptr;
-	vkDestroyInstance(m_Instance, nullptr);
+	m_pInstance = nullptr;
 
 	// GLFW window
 	glfwDestroyWindow(m_Window);
@@ -232,29 +232,8 @@ void HelloTriangleApplication::CreateInstance()
 	// Not optional data about extensions & validation layers
 	std::vector<const char*> extensions = GetRequiredExtensions();
 
-	VkInstanceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo; // TODO: AppInfo make a helper getter function
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-	createInfo.ppEnabledExtensionNames = extensions.data();
-
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-	if (config::EnableValidationLayers) {
-		// Layers info
-		createInfo.enabledLayerCount = static_cast<uint32_t>(config::ValidationLayers.size());
-		createInfo.ppEnabledLayerNames = config::ValidationLayers.data();
-
-		// Debug info
-		PopulateDebugMessengerCreateInfo(debugCreateInfo);
-		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-	}
-	else {
-		// Layers info
-		createInfo.enabledLayerCount = 0;
-
-		// Debug info
-		createInfo.pNext = nullptr;
-	}
+	PopulateDebugMessengerCreateInfo(debugCreateInfo);
 	
 	// Checking for extension support
 	{
@@ -287,10 +266,8 @@ void HelloTriangleApplication::CreateInstance()
 		std::cout << '\n';
 	}
 
-	// Create instance using specified data
-	if (VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance); result != VK_SUCCESS) {
-		throw std::runtime_error("failed to create instance!");
-	}
+	// Create instance resource
+	m_pInstance = std::make_unique<GP2_VkInstance>(appInfo, extensions, config::EnableValidationLayers, config::ValidationLayers, &debugCreateInfo);
 }
 bool HelloTriangleApplication::CheckValidationLayerSupport() const
 {
@@ -348,7 +325,7 @@ void HelloTriangleApplication::SetupDebugMessenger()
 	PopulateDebugMessengerCreateInfo(createInfo);
 
 	// Create extension object
-	if (CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
+	if (CreateDebugUtilsMessengerEXT(m_pInstance->Get(), &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
 		throw std::runtime_error("failed to set up debug messenger!");
 	}
 }
@@ -398,7 +375,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 {
 	// Get the number of graphics cards available
 	uint32_t deviceCount{ 0 };
-	vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(m_pInstance->Get(), &deviceCount, nullptr);
 
 	// Exit early if there are 0 devices with Vulkan support
 	if (deviceCount == 0) {
@@ -407,7 +384,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 
 	// Allocate an array to hold all the device handles
 	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(m_Instance, &deviceCount, devices.data());
+	vkEnumeratePhysicalDevices(m_pInstance->Get(), &deviceCount, devices.data());
 
 	// TODO: PhysicalDevice go for the best option instead of the first one that works
 	// Evaluate each device and check if they are suitable

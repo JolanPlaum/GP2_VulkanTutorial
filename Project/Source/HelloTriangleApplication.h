@@ -14,6 +14,7 @@
 #include "Source/GP2_VkImageView.h"
 #include "Source/GP2_VkFramebuffer.h"
 #include "Source/GP2_VkSurfaceKHR.h"
+#include "Source/GP2_VkInstance.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -59,7 +60,7 @@ private:
 	// Member variables
 	GLFWwindow* m_Window; // TODO: RAII
 
-	VkInstance m_Instance; // TODO: RAII
+	std::unique_ptr<GP2_VkInstance> m_pInstance;
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
 	std::unique_ptr<GP2_VkSurfaceKHR> m_pSurface;
 
