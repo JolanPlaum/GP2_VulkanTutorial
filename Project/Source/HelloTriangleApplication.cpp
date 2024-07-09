@@ -77,7 +77,7 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateFramebuffers();
 
-	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_Device);
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get());
 	CreateGraphicsPipeline();
 
 	CreateCommandPool();
@@ -95,7 +95,7 @@ void HelloTriangleApplication::MainLoop()
 	}
 
 	// Wait for operations to finish before exiting
-	vkDeviceWaitIdle(m_Device);
+	vkDeviceWaitIdle(m_pDevice->Get());
 }
 void HelloTriangleApplication::Cleanup()
 {
@@ -103,14 +103,14 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandPool = nullptr;
 
-	vkDestroyPipeline(m_Device, m_GraphicsPipeline, nullptr);
+	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
 
 	CleanupSwapChain();
 
 	m_pRenderPass = nullptr;
 
-	vkDestroyDevice(m_Device, nullptr);
+	m_pDevice = nullptr;
 
 	// Destroyed right before instance to allow for debug messages during cleanup
 	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_pInstance->Get(), m_DebugMessenger, nullptr);
@@ -127,11 +127,11 @@ void HelloTriangleApplication::Cleanup()
 void HelloTriangleApplication::DrawFrame()
 {
 	// Wait for the previous frame to finish
-	vkWaitForFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame].Get(), VK_TRUE, UINT64_MAX);
+	vkWaitForFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get(), VK_TRUE, UINT64_MAX);
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_Device, m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -146,7 +146,7 @@ void HelloTriangleApplication::DrawFrame()
 	}
 
 	// Reset fence if an image was succesfully acquired
-	vkResetFences(m_Device, 1, &m_InFlightFences[m_CurrentFrame].Get());
+	vkResetFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get());
 
 	// Record a command buffer which draws the scene onto the acquired image
 	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
@@ -518,13 +518,11 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	}
 
 	// Create logical device using specified data
-	if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create logical device!");
-	}
+	m_pDevice = std::make_unique<GP2_VkDevice>(m_PhysicalDevice, queueCreateInfos, config::ValidationLayers, config::DeviceExtensions, deviceFeatures);
 
 	// Retrieve queue handle for queue family (index 0 as there's only one right now)
-	vkGetDeviceQueue(m_Device, indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
-	vkGetDeviceQueue(m_Device, indices.PresentFamily.value(), 0, &m_PresentQueue);
+	vkGetDeviceQueue(m_pDevice->Get(), indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(m_pDevice->Get(), indices.PresentFamily.value(), 0, &m_PresentQueue);
 }
 
 void HelloTriangleApplication::CreateSwapChain()
@@ -580,14 +578,14 @@ void HelloTriangleApplication::CreateSwapChain()
 		createInfo.oldSwapchain = VK_NULL_HANDLE; // it's possible the swap chain becomes invalid/unoptimized (e.g. window was resized)
 	}
 
-	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(m_Device, createInfo);
+	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(m_pDevice->Get(), createInfo);
 
 	// Get the final number of images
-	vkGetSwapchainImagesKHR(m_Device, m_pSwapChain->Get(), &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_pDevice->Get(), m_pSwapChain->Get(), &imageCount, nullptr);
 
 	// Allocate an array to hold all the swap chain images
 	m_SwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(m_Device, m_pSwapChain->Get(), &imageCount, m_SwapChainImages.data());
+	vkGetSwapchainImagesKHR(m_pDevice->Get(), m_pSwapChain->Get(), &imageCount, m_SwapChainImages.data());
 
 	// Store the format and extent that was chosen, these will be needed later on
 	m_SwapChainImageFormat = surfaceFormat.format;
@@ -601,7 +599,7 @@ void HelloTriangleApplication::CreateImageViews()
 	// Loop over all the swap chain images
 	for (size_t i{ 0 }; i < m_SwapChainImages.size(); ++i)
 	{
-		m_SwapChainImageViews.push_back({ m_Device, m_SwapChainImages[i], m_SwapChainImageFormat });
+		m_SwapChainImageViews.push_back({ m_pDevice->Get(), m_SwapChainImages[i], m_SwapChainImageFormat });
 	}
 }
 void HelloTriangleApplication::CreateFramebuffers()
@@ -617,7 +615,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		//  layerCount refers to the number of layers inside of each swap chain image
-		m_SwapChainFramebuffers.push_back({ m_Device, m_pRenderPass->Get(), attachments, m_SwapChainExtent, 1 });
+		m_SwapChainFramebuffers.push_back({ m_pDevice->Get(), m_pRenderPass->Get(), attachments, m_SwapChainExtent, 1 });
 	}
 }
 void HelloTriangleApplication::RecreateSwapChain()
@@ -633,7 +631,7 @@ void HelloTriangleApplication::RecreateSwapChain()
 	// Don't touch resources that are still in use
 	// TODO: RecreateSwapChain use oldSwapChain to allow existing swap chain to operate
 	//  while creating a new one (hint: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation#page_Recreating-the-swap-chain )
-	vkDeviceWaitIdle(m_Device);
+	vkDeviceWaitIdle(m_pDevice->Get());
 
 	// Ensure old versions are correctly cleaned up
 	CleanupSwapChain();
@@ -809,14 +807,14 @@ void HelloTriangleApplication::CreateRenderPass()
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	}
 
-	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_Device, std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
+	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_pDevice->Get(), std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
 }
 
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
-	GP2_VkShaderModule vertShaderModule{ m_Device, "Shaders/shader.vert.spv" };
-	GP2_VkShaderModule fragShaderModule{ m_Device, "Shaders/shader.frag.spv" };
+	GP2_VkShaderModule vertShaderModule{ m_pDevice->Get(), "Shaders/shader.vert.spv" };
+	GP2_VkShaderModule fragShaderModule{ m_pDevice->Get(), "Shaders/shader.frag.spv" };
 
 	// TODO: Shader read up on .pName and .pSpecializationInfo, interesting for custimization of single shader usage
 	// Assign vertex & fragment shader to a specific pipeline stage
@@ -965,7 +963,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 
 	// Create the graphics pipeline (can create multiple pipelines in a single call)
-	if (vkCreateGraphicsPipelines(m_Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
+	if (vkCreateGraphicsPipelines(m_pDevice->Get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 }
@@ -979,7 +977,7 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 
 	// Create shader module using specified data
 	VkShaderModule shaderModule{};
-	if (vkCreateShaderModule(m_Device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+	if (vkCreateShaderModule(m_pDevice->Get(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shader module!");
 	}
 
@@ -991,7 +989,7 @@ void HelloTriangleApplication::CreateCommandPool()
 	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
 	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
 
-	m_pCommandPool = std::make_unique<GP2_VkCommandPool>(m_Device, queueFamilyIndices.GraphicsFamily.value());
+	m_pCommandPool = std::make_unique<GP2_VkCommandPool>(m_pDevice->Get(), queueFamilyIndices.GraphicsFamily.value());
 }
 void HelloTriangleApplication::AllocateCommandBuffers()
 {
@@ -1004,7 +1002,7 @@ void HelloTriangleApplication::AllocateCommandBuffers()
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
 
-	if (vkAllocateCommandBuffers(m_Device, &allocInfo, m_CommandBuffers.data()) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(m_pDevice->Get(), &allocInfo, m_CommandBuffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 }
@@ -1084,11 +1082,11 @@ void HelloTriangleApplication::CreateSyncObjects()
 	for (uint32_t i{}; i < config::MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		try {
-			m_ImageAvailableSemaphores.push_back({ m_Device });
-			m_RenderFinishedSemaphores.push_back({ m_Device });
+			m_ImageAvailableSemaphores.push_back({ m_pDevice->Get() });
+			m_RenderFinishedSemaphores.push_back({ m_pDevice->Get() });
 
 			// Start fences signaled so the first draw call isn't blocked
-			m_InFlightFences.push_back({ m_Device, true });
+			m_InFlightFences.push_back({ m_pDevice->Get(), true});
 		}
 		catch (const std::exception& e) {
 			throw std::runtime_error("failed to create synchronization objects for a frame!");

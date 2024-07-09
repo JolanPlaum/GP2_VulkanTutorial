@@ -15,6 +15,7 @@
 #include "Source/GP2_VkFramebuffer.h"
 #include "Source/GP2_VkSurfaceKHR.h"
 #include "Source/GP2_VkInstance.h"
+#include "Source/GP2_VkDevice.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -65,7 +66,7 @@ private:
 	std::unique_ptr<GP2_VkSurfaceKHR> m_pSurface;
 
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
-	VkDevice m_Device; // TODO: RAII
+	std::unique_ptr<GP2_VkDevice> m_pDevice;
 
 	VkQueue m_GraphicsQueue;
 	VkQueue m_PresentQueue;
