@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------
 // Constructors
 //-----------------------------------------------------------------
-GP2_VkDevice::GP2_VkDevice(const VkPhysicalDevice& physicalDevice, const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos, const std::vector<const char*>& enabledExtensions, const std::vector<const char*>& enabledLayers, const VkPhysicalDeviceFeatures& deviceFeatures)
+GP2_VkDevice::GP2_VkDevice(const VkPhysicalDevice& physicalDevice, const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos, const std::vector<const char*>& enabledLayers, const std::vector<const char*>& enabledExtensions, const VkPhysicalDeviceFeatures& deviceFeatures)
 	: m_Device{}
 {
 	// Create info
