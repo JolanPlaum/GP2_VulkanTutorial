@@ -65,7 +65,7 @@ private:
 	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
 	std::unique_ptr<GP2_VkSurfaceKHR> m_pSurface;
 
-	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE; // TODO: RAII
+	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 	std::unique_ptr<GP2_VkDevice> m_pDevice;
 
 	VkQueue m_GraphicsQueue;
