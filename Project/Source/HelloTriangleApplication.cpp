@@ -82,6 +82,7 @@ void HelloTriangleApplication::InitVulkan()
 
 	CreateCommandPool();
 	AllocateCommandBuffers();
+	RecordCommandBuffers();
 
 	CreateSyncObjects();
 }
@@ -148,10 +149,6 @@ void HelloTriangleApplication::DrawFrame()
 	// Reset fence if an image was succesfully acquired
 	vkResetFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get());
 
-	// Record a command buffer which draws the scene onto the acquired image
-	vkResetCommandBuffer(m_CommandBuffers[m_CurrentFrame], 0);
-	RecordCommandBuffer(m_CommandBuffers[m_CurrentFrame], imageIndex);
-
 	// Submit the recorded command buffer to the GPU
 	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame].Get() };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // corresponds to semaphore with same index
@@ -166,7 +163,7 @@ void HelloTriangleApplication::DrawFrame()
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentFrame];
+		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
 
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
@@ -643,6 +640,12 @@ void HelloTriangleApplication::RecreateSwapChain()
 	CreateSwapChain();
 	CreateImageViews();
 	CreateFramebuffers();
+
+	if (m_SwapChainImages.size() != m_CommandBuffers.size()) {
+		CreateCommandPool();
+		AllocateCommandBuffers();
+	}
+	RecordCommandBuffers();
 }
 void HelloTriangleApplication::CleanupSwapChain()
 {
@@ -996,8 +999,8 @@ void HelloTriangleApplication::CreateCommandPool()
 }
 void HelloTriangleApplication::AllocateCommandBuffers()
 {
-	// Allocate enough space to fit a command buffer for each frame in flight
-	m_CommandBuffers.resize(config::MAX_FRAMES_IN_FLIGHT);
+	// Allocate enough space to fit a command buffer for each possible swap chain image
+	m_CommandBuffers.resize(m_SwapChainImages.size());
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1007,6 +1010,20 @@ void HelloTriangleApplication::AllocateCommandBuffers()
 
 	if (vkAllocateCommandBuffers(m_pDevice->Get(), &allocInfo, m_CommandBuffers.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
+	}
+}
+void HelloTriangleApplication::RecordCommandBuffers()
+{
+	// Check if there are a correct amount of command buffers
+	if (m_SwapChainImages.size() != m_CommandBuffers.size()) {
+		throw std::runtime_error("failed to record command buffers due to size difference!");
+	}
+
+	// Record command buffer for each possible image
+	for (int32_t i{}; i < m_SwapChainImages.size(); ++i)
+	{
+		vkResetCommandBuffer(m_CommandBuffers[i], 0);
+		RecordCommandBuffer(m_CommandBuffers[i], i);
 	}
 }
 void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)

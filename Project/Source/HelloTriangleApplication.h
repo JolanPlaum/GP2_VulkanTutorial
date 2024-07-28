@@ -150,6 +150,7 @@ private:
 
 	void CreateCommandPool();
 	void AllocateCommandBuffers();
+	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 	void CreateSyncObjects();
