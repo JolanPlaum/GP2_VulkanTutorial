@@ -450,6 +450,9 @@ QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice 
 	}
 
 	return indices;
+
+	/* TODO: FindQueueFamilies add logic to explicitly prefer a physical device that \
+	supports drawing and presentation in the same queue for improved performance */
 }
 bool HelloTriangleApplication::CheckDeviceExtensionSupport(VkPhysicalDevice device)
 {
