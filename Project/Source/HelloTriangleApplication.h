@@ -16,6 +16,7 @@
 #include "Source/GP2_VkSurfaceKHR.h"
 #include "Source/GP2_VkInstance.h"
 #include "Source/GP2_VkDevice.h"
+#include "Source/GP2_CommandBuffers.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -82,8 +83,7 @@ private:
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
-	std::unique_ptr<GP2_VkCommandPool> m_pCommandPool;
-	std::vector<VkCommandBuffer> m_CommandBuffers;
+	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;
@@ -149,7 +149,6 @@ private:
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
 	void CreateCommandPool();
-	void AllocateCommandBuffers();
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 

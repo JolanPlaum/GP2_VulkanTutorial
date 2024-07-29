@@ -80,7 +80,6 @@ void HelloTriangleApplication::InitVulkan()
 	CreateGraphicsPipeline();
 
 	CreateCommandPool();
-	AllocateCommandBuffers();
 	RecordCommandBuffers();
 
 	CreateSyncObjects();
@@ -101,7 +100,7 @@ void HelloTriangleApplication::Cleanup()
 {
 	DestroySyncObjects();
 
-	m_pCommandPool = nullptr;
+	m_pCommandBuffers = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
@@ -162,7 +161,7 @@ void HelloTriangleApplication::DrawFrame()
 		submitInfo.pWaitDstStageMask = waitStages;
 
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &m_CommandBuffers[imageIndex];
+		submitInfo.pCommandBuffers = &m_pCommandBuffers->Get()[imageIndex];
 
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
@@ -640,9 +639,8 @@ void HelloTriangleApplication::RecreateSwapChain()
 	CreateImageViews();
 	CreateFramebuffers();
 
-	if (m_SwapChainImages.size() != m_CommandBuffers.size()) {
+	if (m_SwapChainImages.size() != m_pCommandBuffers->Get().size()) {
 		CreateCommandPool();
-		AllocateCommandBuffers();
 	}
 	RecordCommandBuffers();
 }
@@ -992,37 +990,23 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 void HelloTriangleApplication::CreateCommandPool()
 {
 	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
-	QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_PhysicalDevice);
-
-	m_pCommandPool = std::make_unique<GP2_VkCommandPool>(m_pDevice->Get(), queueFamilyIndices.GraphicsFamily.value());
-}
-void HelloTriangleApplication::AllocateCommandBuffers()
-{
-	// Allocate enough space to fit a command buffer for each possible swap chain image
-	m_CommandBuffers.resize(m_SwapChainImages.size());
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = m_pCommandPool->Get();
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = static_cast<uint32_t>(m_CommandBuffers.size());
-
-	if (vkAllocateCommandBuffers(m_pDevice->Get(), &allocInfo, m_CommandBuffers.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
+	m_pCommandBuffers = std::make_unique<GP2_CommandBuffers>(
+		m_pDevice->Get(),
+		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(),
+		m_SwapChainImages.size());
 }
 void HelloTriangleApplication::RecordCommandBuffers()
 {
 	// Check if there are a correct amount of command buffers
-	if (m_SwapChainImages.size() != m_CommandBuffers.size()) {
+	if (m_SwapChainImages.size() != m_pCommandBuffers->Get().size()) {
 		throw std::runtime_error("failed to record command buffers due to size difference!");
 	}
 
 	// Record command buffer for each possible image
 	for (int32_t i{}; i < m_SwapChainImages.size(); ++i)
 	{
-		vkResetCommandBuffer(m_CommandBuffers[i], 0);
-		RecordCommandBuffer(m_CommandBuffers[i], i);
+		vkResetCommandBuffer(m_pCommandBuffers->Get()[i], 0);
+		RecordCommandBuffer(m_pCommandBuffers->Get()[i], i);
 	}
 }
 void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
