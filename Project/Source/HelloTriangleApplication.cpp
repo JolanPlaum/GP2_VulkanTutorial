@@ -70,11 +70,10 @@ void HelloTriangleApplication::InitVulkan()
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 
+	CreateRenderPass(ChooseSwapSurfaceFormat(QuerySwapChainSupport(m_PhysicalDevice, m_pSurface->Get()).Formats).format);
+
 	CreateSwapChain();
 	CreateImageViews();
-
-	CreateRenderPass();
-
 	CreateFramebuffers();
 
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get());
@@ -738,7 +737,7 @@ VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitie
 	return actualExtent;
 }
 
-void HelloTriangleApplication::CreateRenderPass()
+void HelloTriangleApplication::CreateRenderPass(VkFormat format)
 {
 	// There can be multiple attachments descriptions per render pass.
 	// For every attachment there's 1 attachment reference, however
@@ -749,7 +748,7 @@ void HelloTriangleApplication::CreateRenderPass()
 	// Attachment description
 	VkAttachmentDescription colorAttachment{}; // normally an array but we're currently using a single color buffer
 	{
-		colorAttachment.format = m_SwapChainImageFormat; // should match the format of the swap chain images
+		colorAttachment.format = format; // should match the format of the swap chain images
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT; // should match multisampling settings from graphics pipeline
 
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // determines what to do with data before rendering

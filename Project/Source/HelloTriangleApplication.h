@@ -67,9 +67,10 @@ private:
 
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
 	std::unique_ptr<GP2_VkDevice> m_pDevice;
-
 	VkQueue m_GraphicsQueue;
 	VkQueue m_PresentQueue;
+
+	std::unique_ptr<GP2_VkRenderPass> m_pRenderPass;
 
 	std::unique_ptr<GP2_VkSwapchainKHR> m_pSwapChain;
 	std::vector<VkImage> m_SwapChainImages;
@@ -78,7 +79,6 @@ private:
 	std::vector<GP2_VkImageView> m_SwapChainImageViews;
 	std::vector<GP2_VkFramebuffer> m_SwapChainFramebuffers;
 
-	std::unique_ptr<GP2_VkRenderPass> m_pRenderPass;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
@@ -143,7 +143,7 @@ private:
 	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 	VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
-	void CreateRenderPass();
+	void CreateRenderPass(VkFormat format);
 
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
