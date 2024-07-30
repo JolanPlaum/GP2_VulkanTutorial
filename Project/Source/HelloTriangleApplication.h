@@ -5,18 +5,18 @@
 #include <vector>
 #include <optional>
 #include <memory>
-#include "Source/GP2_VkFence.h"
-#include "Source/GP2_VkSemaphore.h"
-#include "Source/GP2_VkCommandPool.h"
-#include "Source/GP2_VkPipelineLayout.h"
-#include "Source/GP2_VkRenderPass.h"
-#include "Source/GP2_VkSwapchainKHR.h"
-#include "Source/GP2_VkImageView.h"
-#include "Source/GP2_VkFramebuffer.h"
-#include "Source/GP2_VkSurfaceKHR.h"
-#include "Source/GP2_VkInstance.h"
-#include "Source/GP2_VkDevice.h"
-#include "Source/GP2_CommandBuffers.h"
+#include "RAII/GP2_VkFence.h"
+#include "RAII/GP2_VkSemaphore.h"
+#include "RAII/GP2_VkCommandPool.h"
+#include "RAII/GP2_VkPipelineLayout.h"
+#include "RAII/GP2_VkRenderPass.h"
+#include "RAII/GP2_VkSwapchainKHR.h"
+#include "RAII/GP2_VkImageView.h"
+#include "RAII/GP2_VkFramebuffer.h"
+#include "RAII/GP2_VkSurfaceKHR.h"
+#include "RAII/GP2_VkInstance.h"
+#include "RAII/GP2_VkDevice.h"
+#include "GP2_CommandBuffers.h"
 
 // Class Forward Declarations
 struct GLFWwindow;

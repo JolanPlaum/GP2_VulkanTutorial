@@ -31,18 +31,18 @@ set(SOURCES
 
     "Source/GP2_CommandBuffers.h" "Source/GP2_CommandBuffers.cpp"
 
-    "Source/GP2_VkShaderModule.h" "Source/GP2_VkShaderModule.cpp"
-    "Source/GP2_VkFence.h" "Source/GP2_VkFence.cpp"
-    "Source/GP2_VkSemaphore.h" "Source/GP2_VkSemaphore.cpp"
-    "Source/GP2_VkCommandPool.h" "Source/GP2_VkCommandPool.cpp"
-    "Source/GP2_VkPipelineLayout.h" "Source/GP2_VkPipelineLayout.cpp"
-    "Source/GP2_VkRenderPass.h" "Source/GP2_VkRenderPass.cpp"
-    "Source/GP2_VkSwapchainKHR.h" "Source/GP2_VkSwapchainKHR.cpp"
-    "Source/GP2_VkImageView.h" "Source/GP2_VkImageView.cpp"
-    "Source/GP2_VkFramebuffer.h" "Source/GP2_VkFramebuffer.cpp"
-    "Source/GP2_VkSurfaceKHR.h" "Source/GP2_VkSurfaceKHR.cpp"
-    "Source/GP2_VkInstance.h" "Source/GP2_VkInstance.cpp"
-    "Source/GP2_VkDevice.h" "Source/GP2_VkDevice.cpp"
+    "Source/RAII/GP2_VkShaderModule.h" "Source/RAII/GP2_VkShaderModule.cpp"
+    "Source/RAII/GP2_VkFence.h" "Source/RAII/GP2_VkFence.cpp"
+    "Source/RAII/GP2_VkSemaphore.h" "Source/RAII/GP2_VkSemaphore.cpp"
+    "Source/RAII/GP2_VkCommandPool.h" "Source/RAII/GP2_VkCommandPool.cpp"
+    "Source/RAII/GP2_VkPipelineLayout.h" "Source/RAII/GP2_VkPipelineLayout.cpp"
+    "Source/RAII/GP2_VkRenderPass.h" "Source/RAII/GP2_VkRenderPass.cpp"
+    "Source/RAII/GP2_VkSwapchainKHR.h" "Source/RAII/GP2_VkSwapchainKHR.cpp"
+    "Source/RAII/GP2_VkImageView.h" "Source/RAII/GP2_VkImageView.cpp"
+    "Source/RAII/GP2_VkFramebuffer.h" "Source/RAII/GP2_VkFramebuffer.cpp"
+    "Source/RAII/GP2_VkSurfaceKHR.h" "Source/RAII/GP2_VkSurfaceKHR.cpp"
+    "Source/RAII/GP2_VkInstance.h" "Source/RAII/GP2_VkInstance.cpp"
+    "Source/RAII/GP2_VkDevice.h" "Source/RAII/GP2_VkDevice.cpp"
 )
 
 # Create the executable

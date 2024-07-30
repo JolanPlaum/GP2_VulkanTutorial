@@ -13,7 +13,7 @@
 #include <limits>
 #include <algorithm>
 
-#include "GP2_VkShaderModule.h"
+#include "RAII/GP2_VkShaderModule.h"
 
 
 //-----------------------------------------------------------------

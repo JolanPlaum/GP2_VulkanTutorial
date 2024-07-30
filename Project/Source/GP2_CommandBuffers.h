@@ -3,7 +3,7 @@
 // Includes
 #include <vulkan/vulkan_core.h>
 #include <vector>
-#include "Source/GP2_VkCommandPool.h"
+#include "RAII/GP2_VkCommandPool.h"
 
 // Class Forward Declarations
 
