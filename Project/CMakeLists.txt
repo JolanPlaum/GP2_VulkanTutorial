@@ -27,6 +27,7 @@ add_custom_target(
 set(SOURCES
     "main.cpp"
     "Utils.h"
+    "DataTypes.h"
     "Source/HelloTriangleApplication.h" "Source/HelloTriangleApplication.cpp"
 
     "Source/GP2_CommandBuffers.h" "Source/GP2_CommandBuffers.cpp"

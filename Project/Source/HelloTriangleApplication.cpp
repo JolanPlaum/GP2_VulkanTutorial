@@ -5,6 +5,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include "Utils.h"
+#include "DataTypes.h"
 #include <stdexcept>
 #include <vector>
 #include <iostream>
@@ -840,13 +841,21 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 		fragShaderStageInfo
 	};
 
+	std::vector<VkVertexInputBindingDescription> bindingDescriptions{
+		Vertex::GetBindingDescription()
+	};
+	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{
+		Vertex::GetAttributeDescriptions()[0],
+		Vertex::GetAttributeDescriptions()[1]
+	};
+
 	// Describe the format of vertex data that will be passed to the vertex shader
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+	vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 
 
