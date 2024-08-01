@@ -86,10 +86,10 @@ private:
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
-	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
-
 	std::unique_ptr<GP2_VkBuffer> m_pVertexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexBufferMemory;
+
+	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;
@@ -158,7 +158,9 @@ private:
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
+	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
 	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
+	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void CreateSyncObjects();

@@ -1093,32 +1093,90 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	}
 }
 
+void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
+{
+	// Create buffer resource
+	buffer = std::move(GP2_VkBuffer{ m_pDevice->Get(), size, usage, false });
+
+	// Get vertex buffer memory requirements
+	VkMemoryRequirements memRequirements{};
+	vkGetBufferMemoryRequirements(m_pDevice->Get(), buffer.Get(), &memRequirements);
+
+	// Allocate vertex buffer memory resource
+	bufferMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
+
+	// Associate memory with vertex buffer
+	vkBindBufferMemory(m_pDevice->Get(), buffer.Get(), bufferMemory.Get(), 0);
+
+}
 void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
 {
 	// Calculate vertex buffer size
 	VkDeviceSize bufferByteSize{ sizeof(vertices[0]) * vertices.size() };
 
-	// Create vertex buffer resource
-	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>(m_pDevice->Get(), bufferByteSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
-
-	// Get vertex buffer memory requirements
-	VkMemoryRequirements memRequirements{};
-	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_pVertexBuffer->Get(), &memRequirements);
-
-	// Allocate vertex buffer memory resource
-	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>(
-		m_pDevice->Get(),
-		memRequirements.size,
-		FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-
-	// Associate memory with vertex buffer
-	vkBindBufferMemory(m_pDevice->Get(), m_pVertexBuffer->Get(), m_pVertexBufferMemory->Get(), 0);
+	// Create staging buffer
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
 
 	// Copy vertices data to vertex buffer
 	void* data{};
-	vkMapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get(), 0, bufferByteSize, 0, &data);
+	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, bufferByteSize, 0, &data);
 	memcpy(data, vertices.data(), bufferByteSize);
-	vkUnmapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get());
+	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+
+	// Create vertex buffer
+	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		*m_pVertexBuffer,
+		*m_pVertexBufferMemory);
+
+	// Transfer staging buffer to vertex buffer
+	CopyBuffer(stagingBuffer.Get(), m_pVertexBuffer->Get(), bufferByteSize);
+}
+void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+	// Temporary command buffer
+	GP2_CommandBuffers commandBuffer{
+		m_pDevice->Get(),
+		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), // TODO: use a transfer family queue
+		1
+	};
+
+	// Specify command buffer usage
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	
+	// Begin recording commands
+	vkBeginCommandBuffer(commandBuffer.Get()[0], &beginInfo);
+
+	// Copy buffer command
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	vkCmdCopyBuffer(commandBuffer.Get()[0], srcBuffer, dstBuffer, 1, &copyRegion);
+
+	// End recording commands
+	vkEndCommandBuffer(commandBuffer.Get()[0]);
+
+	// Execute the commands
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer.Get()[0];
+	vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(m_GraphicsQueue);
 }
 uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
