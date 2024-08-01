@@ -4,6 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <fstream>
+#include "DataTypes.h"
 
 namespace config
 {
@@ -19,6 +20,12 @@ namespace config
 #else
 	const bool EnableValidationLayers = true;
 #endif
+
+	const std::vector<Vertex> Vertices{
+		{ { 0.0f,-0.5f }, { 1.0f, 0.0f, 0.0f} },
+		{ { 0.5f, 0.5f }, { 0.0f, 1.0f, 0.0f} },
+		{ {-0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f} }
+	};
 }
 
 namespace util

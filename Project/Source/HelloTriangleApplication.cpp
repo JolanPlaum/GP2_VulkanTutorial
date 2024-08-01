@@ -81,6 +81,9 @@ void HelloTriangleApplication::InitVulkan()
 	CreateGraphicsPipeline();
 
 	CreateCommandPool();
+	CreateVertexBuffer();
+	AllocateVertexBufferMemory();
+	FillVertexBufferData();
 	RecordCommandBuffers();
 
 	CreateSyncObjects();
@@ -101,6 +104,8 @@ void HelloTriangleApplication::Cleanup()
 {
 	DestroySyncObjects();
 
+	vkDestroyBuffer(m_pDevice->Get(), m_VertexBuffer, nullptr);
+	vkFreeMemory(m_pDevice->Get(), m_VertexBufferMemory, nullptr);
 	m_pCommandBuffers = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
@@ -1072,8 +1077,13 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		}
 
+		// Bind vertex buffer
+		std::vector<VkBuffer> vertexBuffers{ m_VertexBuffer };
+		std::vector<VkDeviceSize> offsets{ 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
+
 		// TODO: CmdDraw get rid of magic numbers
-		vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(config::Vertices.size()), 1, 0, 0);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -1081,6 +1091,67 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
 	}
+}
+
+void HelloTriangleApplication::CreateVertexBuffer()
+{
+	// Create info
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = sizeof(config::Vertices[0]) * config::Vertices.size(); // Size of buffer in bytes
+	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT; // Which purposes the data is going to be used for
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Specify if the buffer is shared between queue families
+
+	// Create buffer using specified data
+	if (vkCreateBuffer(m_pDevice->Get(), &bufferInfo, nullptr, &m_VertexBuffer) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create vertex buffer!");
+	}
+}
+void HelloTriangleApplication::AllocateVertexBufferMemory()
+{
+	// Get vertex buffer memory requirements
+	VkMemoryRequirements memRequirements{};
+	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_VertexBuffer, &memRequirements);
+
+	// Allocate info
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	// Allocate memory using specified data
+	if (vkAllocateMemory(m_pDevice->Get(), &allocInfo, nullptr, &m_VertexBufferMemory) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate vertex buffer memory!");
+	}
+
+}
+void HelloTriangleApplication::FillVertexBufferData()
+{
+	// Associate memory with vertex buffer
+	vkBindBufferMemory(m_pDevice->Get(), m_VertexBuffer, m_VertexBufferMemory, 0);
+
+	// Copy vertices data to vertex buffer
+	void* data{};
+	vkMapMemory(m_pDevice->Get(), m_VertexBufferMemory, 0, sizeof(config::Vertices[0]) * config::Vertices.size(), 0, &data);
+	memcpy(data, config::Vertices.data(), sizeof(config::Vertices[0]) * config::Vertices.size());
+	vkUnmapMemory(m_pDevice->Get(), m_VertexBufferMemory);
+}
+uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+{
+	// Available types of memory
+	VkPhysicalDeviceMemoryProperties memProperties{};
+	vkGetPhysicalDeviceMemoryProperties(m_PhysicalDevice, &memProperties);
+
+	// Find a memory type that is suitable for the buffer
+	for (uint32_t i{ 0 }; i < memProperties.memoryTypeCount; ++i)
+	{
+		if ((typeFilter & (1 << i)) &&
+			(memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void HelloTriangleApplication::CreateSyncObjects()

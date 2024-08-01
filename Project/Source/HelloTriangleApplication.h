@@ -85,6 +85,9 @@ private:
 
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
+	VkBuffer m_VertexBuffer; // TODO: RAII
+	VkDeviceMemory m_VertexBufferMemory; // TODO: RAII
+
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;
 	std::vector<GP2_VkFence> m_InFlightFences;
@@ -151,6 +154,11 @@ private:
 	void CreateCommandPool();
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+	void CreateVertexBuffer();
+	void AllocateVertexBufferMemory();
+	void FillVertexBufferData();
+	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void CreateSyncObjects();
 	void DestroySyncObjects();
