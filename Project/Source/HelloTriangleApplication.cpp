@@ -81,6 +81,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateGraphicsPipeline();
 
 	CreateVertexBuffer(config::Vertices);
+	CreateIndexBuffer(config::Indices);
 
 	CreateCommandPool();
 	RecordCommandBuffers();
@@ -105,6 +106,8 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 
+	m_pIndexBufferMemory = nullptr;
+	m_pIndexBuffer = nullptr;
 	m_pVertexBufferMemory = nullptr;
 	m_pVertexBuffer = nullptr;
 
@@ -1082,8 +1085,11 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		std::vector<VkDeviceSize> offsets{ 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
 
+		// Bind index buffer
+		vkCmdBindIndexBuffer(commandBuffer, m_pIndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT16);
+
 		// TODO: CmdDraw get rid of magic numbers
-		vkCmdDraw(commandBuffer, static_cast<uint32_t>(config::Vertices.size()), 1, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -1124,7 +1130,7 @@ void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& ver
 		stagingBuffer,
 		stagingBufferMemory);
 
-	// Copy vertices data to vertex buffer
+	// Copy vertices data to staging buffer
 	void* data{};
 	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, bufferByteSize, 0, &data);
 	memcpy(data, vertices.data(), bufferByteSize);
@@ -1142,6 +1148,40 @@ void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& ver
 
 	// Transfer staging buffer to vertex buffer
 	CopyBuffer(stagingBuffer.Get(), m_pVertexBuffer->Get(), bufferByteSize);
+}
+void HelloTriangleApplication::CreateIndexBuffer(const std::vector<uint16_t>& indices)
+{
+	// Calculate index buffer size
+	VkDeviceSize bufferByteSize{ sizeof(indices[0]) * indices.size() };
+
+	// Create staging buffer
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
+
+	// Copy indices data to staging buffer
+	void* data{};
+	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, bufferByteSize, 0, &data);
+	memcpy(data, indices.data(), bufferByteSize);
+	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+
+	// Create index buffer
+	m_pIndexBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pIndexBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		*m_pIndexBuffer,
+		*m_pIndexBufferMemory);
+
+	// Transfer staging buffer to index buffer
+	CopyBuffer(stagingBuffer.Get(), m_pIndexBuffer->Get(), bufferByteSize);
 }
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {

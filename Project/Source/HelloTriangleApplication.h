@@ -88,6 +88,8 @@ private:
 
 	std::unique_ptr<GP2_VkBuffer> m_pVertexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexBufferMemory;
+	std::unique_ptr<GP2_VkBuffer> m_pIndexBuffer;
+	std::unique_ptr<GP2_VkDeviceMemory> m_pIndexBufferMemory;
 
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
@@ -160,6 +162,7 @@ private:
 
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
 	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
+	void CreateIndexBuffer(const std::vector<uint16_t>& indices);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
