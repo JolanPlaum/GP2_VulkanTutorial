@@ -17,6 +17,7 @@
 #include "RAII/GP2_VkInstance.h"
 #include "RAII/GP2_VkDevice.h"
 #include "RAII/GP2_VkBuffer.h"
+#include "RAII/GP2_VkDeviceMemory.h"
 #include "GP2_CommandBuffers.h"
 
 // Class Forward Declarations
@@ -87,7 +88,7 @@ private:
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
 	std::unique_ptr<GP2_VkBuffer> m_pVertexBuffer;
-	VkDeviceMemory m_VertexBufferMemory; // TODO: RAII
+	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexBufferMemory;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;

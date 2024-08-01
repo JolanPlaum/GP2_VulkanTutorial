@@ -105,7 +105,7 @@ void HelloTriangleApplication::Cleanup()
 	DestroySyncObjects();
 
 	m_pVertexBuffer = nullptr;
-	vkFreeMemory(m_pDevice->Get(), m_VertexBufferMemory, nullptr);
+	m_pVertexBufferMemory = nullptr;
 	m_pCommandBuffers = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
@@ -1107,28 +1107,20 @@ void HelloTriangleApplication::AllocateVertexBufferMemory()
 	VkMemoryRequirements memRequirements{};
 	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_pVertexBuffer->Get(), &memRequirements);
 
-	// Allocate info
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	// Allocate memory using specified data
-	if (vkAllocateMemory(m_pDevice->Get(), &allocInfo, nullptr, &m_VertexBufferMemory) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate vertex buffer memory!");
-	}
-
+	// Allocate vertex buffer memory resource
+	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>(m_pDevice->Get(), memRequirements.size,
+		FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 }
 void HelloTriangleApplication::FillVertexBufferData()
 {
 	// Associate memory with vertex buffer
-	vkBindBufferMemory(m_pDevice->Get(), m_pVertexBuffer->Get(), m_VertexBufferMemory, 0);
+	vkBindBufferMemory(m_pDevice->Get(), m_pVertexBuffer->Get(), m_pVertexBufferMemory->Get(), 0);
 
 	// Copy vertices data to vertex buffer
 	void* data{};
-	vkMapMemory(m_pDevice->Get(), m_VertexBufferMemory, 0, sizeof(config::Vertices[0]) * config::Vertices.size(), 0, &data);
+	vkMapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get(), 0, sizeof(config::Vertices[0]) * config::Vertices.size(), 0, &data);
 	memcpy(data, config::Vertices.data(), sizeof(config::Vertices[0]) * config::Vertices.size());
-	vkUnmapMemory(m_pDevice->Get(), m_VertexBufferMemory);
+	vkUnmapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get());
 }
 uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
