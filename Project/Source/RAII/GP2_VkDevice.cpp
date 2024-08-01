@@ -48,7 +48,7 @@ GP2_VkDevice& GP2_VkDevice::operator=(GP2_VkDevice&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyDevice(m_Device, nullptr);
+		if (m_Device) vkDestroyDevice(m_Device, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -65,9 +65,7 @@ GP2_VkDevice& GP2_VkDevice::operator=(GP2_VkDevice&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkDevice::~GP2_VkDevice()
 {
-	if (m_Device != nullptr) {
-		vkDestroyDevice(m_Device, nullptr);
-	}
+	if (m_Device) vkDestroyDevice(m_Device, nullptr);
 }
 
 

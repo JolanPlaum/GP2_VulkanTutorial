@@ -36,7 +36,7 @@ GP2_VkFence& GP2_VkFence::operator=(GP2_VkFence&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyFence(m_Device, m_Fence, nullptr);
+		if (m_Device) vkDestroyFence(m_Device, m_Fence, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -54,7 +54,7 @@ GP2_VkFence& GP2_VkFence::operator=(GP2_VkFence&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkFence::~GP2_VkFence()
 {
-	vkDestroyFence(m_Device, m_Fence, nullptr);
+	if (m_Device) vkDestroyFence(m_Device, m_Fence, nullptr);
 }
 
 

@@ -31,7 +31,7 @@ GP2_VkSwapchainKHR& GP2_VkSwapchainKHR::operator=(GP2_VkSwapchainKHR&& other) no
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroySwapchainKHR(m_Device, m_SwapchainKHR, nullptr);
+		if (m_Device) vkDestroySwapchainKHR(m_Device, m_SwapchainKHR, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -49,7 +49,7 @@ GP2_VkSwapchainKHR& GP2_VkSwapchainKHR::operator=(GP2_VkSwapchainKHR&& other) no
 //-----------------------------------------------------------------
 GP2_VkSwapchainKHR::~GP2_VkSwapchainKHR()
 {
-	vkDestroySwapchainKHR(m_Device, m_SwapchainKHR, nullptr);
+	if (m_Device) vkDestroySwapchainKHR(m_Device, m_SwapchainKHR, nullptr);
 }
 
 

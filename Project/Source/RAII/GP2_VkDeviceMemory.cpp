@@ -37,7 +37,7 @@ GP2_VkDeviceMemory& GP2_VkDeviceMemory::operator=(GP2_VkDeviceMemory&& other) no
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkFreeMemory(m_Device, m_Memory, nullptr);
+		if (m_Device) vkFreeMemory(m_Device, m_Memory, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -55,7 +55,7 @@ GP2_VkDeviceMemory& GP2_VkDeviceMemory::operator=(GP2_VkDeviceMemory&& other) no
 //-----------------------------------------------------------------
 GP2_VkDeviceMemory::~GP2_VkDeviceMemory()
 {
-	vkFreeMemory(m_Device, m_Memory, nullptr);
+	if (m_Device) vkFreeMemory(m_Device, m_Memory, nullptr);
 }
 
 

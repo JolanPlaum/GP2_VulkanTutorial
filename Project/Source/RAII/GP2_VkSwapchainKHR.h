@@ -11,6 +11,7 @@ class GP2_VkSwapchainKHR final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkSwapchainKHR() = default;
 	GP2_VkSwapchainKHR(const VkDevice& device, const VkSwapchainCreateInfoKHR& createInfo);
 	~GP2_VkSwapchainKHR();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkSwapchainKHR m_SwapchainKHR;
+	VkDevice m_Device{ nullptr };
+	VkSwapchainKHR m_SwapchainKHR{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

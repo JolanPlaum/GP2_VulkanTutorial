@@ -39,7 +39,7 @@ GP2_VkBuffer& GP2_VkBuffer::operator=(GP2_VkBuffer&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyBuffer(m_Device, m_Buffer, nullptr);
+		if (m_Device) vkDestroyBuffer(m_Device, m_Buffer, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -57,7 +57,7 @@ GP2_VkBuffer& GP2_VkBuffer::operator=(GP2_VkBuffer&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkBuffer::~GP2_VkBuffer()
 {
-	vkDestroyBuffer(m_Device, m_Buffer, nullptr);
+	if (m_Device) vkDestroyBuffer(m_Device, m_Buffer, nullptr);
 }
 
 

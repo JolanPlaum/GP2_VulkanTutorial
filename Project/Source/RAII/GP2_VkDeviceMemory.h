@@ -11,6 +11,7 @@ class GP2_VkDeviceMemory final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkDeviceMemory() = default;
 	GP2_VkDeviceMemory(const VkDevice& device, VkDeviceSize allocationSize, uint32_t memoryTypeIndex);
 	~GP2_VkDeviceMemory();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkDeviceMemory m_Memory;
+	VkDevice m_Device{ nullptr };
+	VkDeviceMemory m_Memory{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

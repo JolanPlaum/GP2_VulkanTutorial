@@ -41,7 +41,7 @@ GP2_VkFramebuffer& GP2_VkFramebuffer::operator=(GP2_VkFramebuffer&& other) noexc
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyFramebuffer(m_Device, m_Framebuffer, nullptr);
+		if (m_Device) vkDestroyFramebuffer(m_Device, m_Framebuffer, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -59,7 +59,7 @@ GP2_VkFramebuffer& GP2_VkFramebuffer::operator=(GP2_VkFramebuffer&& other) noexc
 //-----------------------------------------------------------------
 GP2_VkFramebuffer::~GP2_VkFramebuffer()
 {
-	vkDestroyFramebuffer(m_Device, m_Framebuffer, nullptr);
+	if (m_Device) vkDestroyFramebuffer(m_Device, m_Framebuffer, nullptr);
 }
 
 

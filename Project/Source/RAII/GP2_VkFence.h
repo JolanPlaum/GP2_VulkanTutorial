@@ -11,6 +11,7 @@ class GP2_VkFence final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkFence() = default;
 	GP2_VkFence(const VkDevice& device, bool signaled = false);
 	~GP2_VkFence();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkFence m_Fence;
+	VkDevice m_Device{ nullptr };
+	VkFence m_Fence{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

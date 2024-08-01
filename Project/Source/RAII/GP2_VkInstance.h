@@ -12,6 +12,7 @@ class GP2_VkInstance final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkInstance() = default;
 	GP2_VkInstance(const VkApplicationInfo& appInfo, const std::vector<const char*>& extensions,
 		bool enableLayers = false, const std::vector<const char*>& layers = {}, VkDebugUtilsMessengerCreateInfoEXT* pDebugInfo = nullptr);
 	~GP2_VkInstance();
@@ -30,7 +31,7 @@ public:
 
 private:
 	// Member variables
-	VkInstance m_Instance;
+	VkInstance m_Instance{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

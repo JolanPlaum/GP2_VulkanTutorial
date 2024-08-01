@@ -11,6 +11,7 @@ class GP2_VkBuffer final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkBuffer() = default;
 	GP2_VkBuffer(const VkDevice& device, VkDeviceSize size, VkBufferUsageFlags usage, bool isShared = false);
 	~GP2_VkBuffer();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkBuffer m_Buffer;
+	VkDevice m_Device{ nullptr };
+	VkBuffer m_Buffer{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

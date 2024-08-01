@@ -12,6 +12,7 @@ class GP2_VkRenderPass final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkRenderPass() = default;
 	GP2_VkRenderPass(const VkDevice& device,
 		const std::vector<VkAttachmentDescription>& attachments,
 		const std::vector<VkSubpassDescription>& subpasses,
@@ -32,8 +33,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkRenderPass m_RenderPass;
+	VkDevice m_Device{ nullptr };
+	VkRenderPass m_RenderPass{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

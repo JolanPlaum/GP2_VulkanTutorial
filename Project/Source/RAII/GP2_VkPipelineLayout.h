@@ -11,6 +11,7 @@ class GP2_VkPipelineLayout final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkPipelineLayout() = default;
 	GP2_VkPipelineLayout(const VkDevice& device);
 	~GP2_VkPipelineLayout();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkPipelineLayout m_PipelineLayout;
+	VkDevice m_Device{ nullptr };
+	VkPipelineLayout m_PipelineLayout{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

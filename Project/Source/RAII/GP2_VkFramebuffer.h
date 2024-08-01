@@ -12,6 +12,7 @@ class GP2_VkFramebuffer final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkFramebuffer() = default;
 	GP2_VkFramebuffer(const VkDevice& device,
 		const VkRenderPass& renderPass,
 		const std::vector<VkImageView>& attachments,
@@ -33,8 +34,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkFramebuffer m_Framebuffer;
+	VkDevice m_Device{ nullptr };
+	VkFramebuffer m_Framebuffer{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

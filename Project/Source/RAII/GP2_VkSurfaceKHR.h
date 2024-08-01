@@ -12,6 +12,7 @@ class GP2_VkSurfaceKHR final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkSurfaceKHR() = default;
 	GP2_VkSurfaceKHR(const VkInstance& instance, GLFWwindow* pWindow);
 	~GP2_VkSurfaceKHR();
 	
@@ -29,8 +30,8 @@ public:
 
 private:
 	// Member variables
-	VkInstance m_Instance;
-	VkSurfaceKHR m_Surface;
+	VkInstance m_Instance{ nullptr };
+	VkSurfaceKHR m_Surface{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

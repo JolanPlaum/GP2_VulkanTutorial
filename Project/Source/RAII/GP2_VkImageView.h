@@ -11,6 +11,7 @@ class GP2_VkImageView final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkImageView() = default;
 	GP2_VkImageView(const VkDevice& device, const VkImage& image, const VkFormat& format);
 	~GP2_VkImageView();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkImageView m_ImageView;
+	VkDevice m_Device{ nullptr };
+	VkImageView m_ImageView{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

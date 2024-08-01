@@ -11,6 +11,7 @@ class GP2_VkCommandPool final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkCommandPool() = default;
 	GP2_VkCommandPool(const VkDevice& device, uint32_t queueFamilyIndex);
 	~GP2_VkCommandPool();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkCommandPool m_CommandPool;
+	VkDevice m_Device{ nullptr };
+	VkCommandPool m_CommandPool{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

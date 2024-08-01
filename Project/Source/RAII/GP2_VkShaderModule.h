@@ -12,6 +12,7 @@ class GP2_VkShaderModule final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkShaderModule() = default;
 	GP2_VkShaderModule(const VkDevice& device, const std::string& path);
 	~GP2_VkShaderModule();
 	
@@ -29,8 +30,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkShaderModule m_ShaderModule;
+	VkDevice m_Device{ nullptr };
+	VkShaderModule m_ShaderModule{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

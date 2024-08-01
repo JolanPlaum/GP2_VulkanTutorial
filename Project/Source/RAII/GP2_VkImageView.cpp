@@ -53,7 +53,7 @@ GP2_VkImageView& GP2_VkImageView::operator=(GP2_VkImageView&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyImageView(m_Device, m_ImageView, nullptr);
+		if (m_Device) vkDestroyImageView(m_Device, m_ImageView, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -71,7 +71,7 @@ GP2_VkImageView& GP2_VkImageView::operator=(GP2_VkImageView&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkImageView::~GP2_VkImageView()
 {
-	vkDestroyImageView(m_Device, m_ImageView, nullptr);
+	if (m_Device) vkDestroyImageView(m_Device, m_ImageView, nullptr);
 }
 
 

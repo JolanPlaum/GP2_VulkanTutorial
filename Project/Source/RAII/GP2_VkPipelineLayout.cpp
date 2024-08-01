@@ -40,7 +40,7 @@ GP2_VkPipelineLayout& GP2_VkPipelineLayout::operator=(GP2_VkPipelineLayout&& oth
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+		if (m_Device) vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -58,7 +58,7 @@ GP2_VkPipelineLayout& GP2_VkPipelineLayout::operator=(GP2_VkPipelineLayout&& oth
 //-----------------------------------------------------------------
 GP2_VkPipelineLayout::~GP2_VkPipelineLayout()
 {
-	vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
+	if (m_Device) vkDestroyPipelineLayout(m_Device, m_PipelineLayout, nullptr);
 }
 
 

@@ -12,6 +12,7 @@ class GP2_VkDevice final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkDevice() = default;
 	GP2_VkDevice(const VkPhysicalDevice& physicalDevice,
 		const std::vector<VkDeviceQueueCreateInfo>& queueCreateInfos,
 		const std::vector<const char*>& enabledLayers,
@@ -33,7 +34,7 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
+	VkDevice m_Device{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

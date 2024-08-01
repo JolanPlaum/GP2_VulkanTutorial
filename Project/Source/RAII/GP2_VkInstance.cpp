@@ -52,7 +52,7 @@ GP2_VkInstance& GP2_VkInstance::operator=(GP2_VkInstance&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyInstance(m_Instance, nullptr);
+		if (m_Instance) vkDestroyInstance(m_Instance, nullptr);
 
 		// Assign new data
 		m_Instance = other.m_Instance;
@@ -69,7 +69,7 @@ GP2_VkInstance& GP2_VkInstance::operator=(GP2_VkInstance&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkInstance::~GP2_VkInstance()
 {
-	vkDestroyInstance(m_Instance, nullptr);
+	if (m_Instance) vkDestroyInstance(m_Instance, nullptr);
 }
 
 

@@ -41,7 +41,7 @@ GP2_VkShaderModule& GP2_VkShaderModule::operator=(GP2_VkShaderModule&& other) no
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
+		if (m_Device) vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -59,7 +59,7 @@ GP2_VkShaderModule& GP2_VkShaderModule::operator=(GP2_VkShaderModule&& other) no
 //-----------------------------------------------------------------
 GP2_VkShaderModule::~GP2_VkShaderModule()
 {
-	vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
+	if (m_Device) vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
 }
 
 

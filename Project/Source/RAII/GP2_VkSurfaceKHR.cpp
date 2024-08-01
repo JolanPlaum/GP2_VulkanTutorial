@@ -33,7 +33,7 @@ GP2_VkSurfaceKHR& GP2_VkSurfaceKHR::operator=(GP2_VkSurfaceKHR&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+		if (m_Instance) vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 
 		// Assign new data
 		m_Instance = other.m_Instance;
@@ -51,7 +51,7 @@ GP2_VkSurfaceKHR& GP2_VkSurfaceKHR::operator=(GP2_VkSurfaceKHR&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkSurfaceKHR::~GP2_VkSurfaceKHR()
 {
-	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+	if (m_Instance) vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 }
 
 

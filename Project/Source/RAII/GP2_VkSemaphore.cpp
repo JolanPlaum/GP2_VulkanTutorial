@@ -35,7 +35,7 @@ GP2_VkSemaphore& GP2_VkSemaphore::operator=(GP2_VkSemaphore&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroySemaphore(m_Device, m_Semaphore, nullptr);
+		if (m_Device) vkDestroySemaphore(m_Device, m_Semaphore, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -53,7 +53,7 @@ GP2_VkSemaphore& GP2_VkSemaphore::operator=(GP2_VkSemaphore&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkSemaphore::~GP2_VkSemaphore()
 {
-	vkDestroySemaphore(m_Device, m_Semaphore, nullptr);
+	if (m_Device) vkDestroySemaphore(m_Device, m_Semaphore, nullptr);
 }
 
 

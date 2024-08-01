@@ -11,6 +11,7 @@ class GP2_VkSemaphore final
 {
 public:
 	// Constructors and Destructor
+	GP2_VkSemaphore() = default;
 	GP2_VkSemaphore(const VkDevice& device);
 	~GP2_VkSemaphore();
 	
@@ -28,8 +29,8 @@ public:
 
 private:
 	// Member variables
-	VkDevice m_Device;
-	VkSemaphore m_Semaphore;
+	VkDevice m_Device{ nullptr };
+	VkSemaphore m_Semaphore{ nullptr };
 
 	//---------------------------
 	// Private Member Functions

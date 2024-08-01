@@ -44,7 +44,7 @@ GP2_VkRenderPass& GP2_VkRenderPass::operator=(GP2_VkRenderPass&& other) noexcept
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+		if (m_Device) vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -62,7 +62,7 @@ GP2_VkRenderPass& GP2_VkRenderPass::operator=(GP2_VkRenderPass&& other) noexcept
 //-----------------------------------------------------------------
 GP2_VkRenderPass::~GP2_VkRenderPass()
 {
-	vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
+	if (m_Device) vkDestroyRenderPass(m_Device, m_RenderPass, nullptr);
 }
 
 

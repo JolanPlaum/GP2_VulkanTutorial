@@ -37,7 +37,7 @@ GP2_VkCommandPool& GP2_VkCommandPool::operator=(GP2_VkCommandPool&& other) noexc
 	if (this != &other)
 	{
 		// Destroy previously owned resource
-		vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+		if (m_Device) vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 
 		// Assign new data
 		m_Device = other.m_Device;
@@ -55,7 +55,7 @@ GP2_VkCommandPool& GP2_VkCommandPool::operator=(GP2_VkCommandPool&& other) noexc
 //-----------------------------------------------------------------
 GP2_VkCommandPool::~GP2_VkCommandPool()
 {
-	vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
+	if (m_Device) vkDestroyCommandPool(m_Device, m_CommandPool, nullptr);
 }
 
 
