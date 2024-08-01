@@ -104,7 +104,7 @@ void HelloTriangleApplication::Cleanup()
 {
 	DestroySyncObjects();
 
-	vkDestroyBuffer(m_pDevice->Get(), m_VertexBuffer, nullptr);
+	m_pVertexBuffer = nullptr;
 	vkFreeMemory(m_pDevice->Get(), m_VertexBufferMemory, nullptr);
 	m_pCommandBuffers = nullptr;
 
@@ -1078,7 +1078,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		}
 
 		// Bind vertex buffer
-		std::vector<VkBuffer> vertexBuffers{ m_VertexBuffer };
+		std::vector<VkBuffer> vertexBuffers{ m_pVertexBuffer->Get() };
 		std::vector<VkDeviceSize> offsets{ 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
 
@@ -1095,23 +1095,17 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 
 void HelloTriangleApplication::CreateVertexBuffer()
 {
-	// Create info
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(config::Vertices[0]) * config::Vertices.size(); // Size of buffer in bytes
-	bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT; // Which purposes the data is going to be used for
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Specify if the buffer is shared between queue families
+	// Vertex buffer size
+	VkDeviceSize size{ sizeof(config::Vertices[0]) * config::Vertices.size() };
 
-	// Create buffer using specified data
-	if (vkCreateBuffer(m_pDevice->Get(), &bufferInfo, nullptr, &m_VertexBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create vertex buffer!");
-	}
+	// Create vertex buffer resource
+	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>(m_pDevice->Get(), size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
 }
 void HelloTriangleApplication::AllocateVertexBufferMemory()
 {
 	// Get vertex buffer memory requirements
 	VkMemoryRequirements memRequirements{};
-	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_VertexBuffer, &memRequirements);
+	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_pVertexBuffer->Get(), &memRequirements);
 
 	// Allocate info
 	VkMemoryAllocateInfo allocInfo{};
@@ -1128,7 +1122,7 @@ void HelloTriangleApplication::AllocateVertexBufferMemory()
 void HelloTriangleApplication::FillVertexBufferData()
 {
 	// Associate memory with vertex buffer
-	vkBindBufferMemory(m_pDevice->Get(), m_VertexBuffer, m_VertexBufferMemory, 0);
+	vkBindBufferMemory(m_pDevice->Get(), m_pVertexBuffer->Get(), m_VertexBufferMemory, 0);
 
 	// Copy vertices data to vertex buffer
 	void* data{};

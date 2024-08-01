@@ -44,6 +44,7 @@ set(SOURCES
     "Source/RAII/GP2_VkSurfaceKHR.h" "Source/RAII/GP2_VkSurfaceKHR.cpp"
     "Source/RAII/GP2_VkInstance.h" "Source/RAII/GP2_VkInstance.cpp"
     "Source/RAII/GP2_VkDevice.h" "Source/RAII/GP2_VkDevice.cpp"
+    "Source/RAII/GP2_VkBuffer.h" "Source/RAII/GP2_VkBuffer.cpp"
 )
 
 # Create the executable
