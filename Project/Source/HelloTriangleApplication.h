@@ -22,6 +22,7 @@
 
 // Class Forward Declarations
 struct GLFWwindow;
+struct Vertex;
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> GraphicsFamily;
@@ -157,9 +158,7 @@ private:
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-	void CreateVertexBuffer();
-	void AllocateVertexBufferMemory();
-	void FillVertexBufferData();
+	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void CreateSyncObjects();

@@ -80,10 +80,9 @@ void HelloTriangleApplication::InitVulkan()
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get());
 	CreateGraphicsPipeline();
 
+	CreateVertexBuffer(config::Vertices);
+
 	CreateCommandPool();
-	CreateVertexBuffer();
-	AllocateVertexBufferMemory();
-	FillVertexBufferData();
 	RecordCommandBuffers();
 
 	CreateSyncObjects();
@@ -104,9 +103,10 @@ void HelloTriangleApplication::Cleanup()
 {
 	DestroySyncObjects();
 
-	m_pVertexBuffer = nullptr;
-	m_pVertexBufferMemory = nullptr;
 	m_pCommandBuffers = nullptr;
+
+	m_pVertexBufferMemory = nullptr;
+	m_pVertexBuffer = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
@@ -1093,33 +1093,31 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	}
 }
 
-void HelloTriangleApplication::CreateVertexBuffer()
+void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
 {
-	// Vertex buffer size
-	VkDeviceSize size{ sizeof(config::Vertices[0]) * config::Vertices.size() };
+	// Calculate vertex buffer size
+	VkDeviceSize bufferByteSize{ sizeof(vertices[0]) * vertices.size() };
 
 	// Create vertex buffer resource
-	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>(m_pDevice->Get(), size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
-}
-void HelloTriangleApplication::AllocateVertexBufferMemory()
-{
+	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>(m_pDevice->Get(), bufferByteSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, false);
+
 	// Get vertex buffer memory requirements
 	VkMemoryRequirements memRequirements{};
 	vkGetBufferMemoryRequirements(m_pDevice->Get(), m_pVertexBuffer->Get(), &memRequirements);
 
 	// Allocate vertex buffer memory resource
-	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>(m_pDevice->Get(), memRequirements.size,
+	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>(
+		m_pDevice->Get(),
+		memRequirements.size,
 		FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
-}
-void HelloTriangleApplication::FillVertexBufferData()
-{
+
 	// Associate memory with vertex buffer
 	vkBindBufferMemory(m_pDevice->Get(), m_pVertexBuffer->Get(), m_pVertexBufferMemory->Get(), 0);
 
 	// Copy vertices data to vertex buffer
 	void* data{};
-	vkMapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get(), 0, sizeof(config::Vertices[0]) * config::Vertices.size(), 0, &data);
-	memcpy(data, config::Vertices.data(), sizeof(config::Vertices[0]) * config::Vertices.size());
+	vkMapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get(), 0, bufferByteSize, 0, &data);
+	memcpy(data, vertices.data(), bufferByteSize);
 	vkUnmapMemory(m_pDevice->Get(), m_pVertexBufferMemory->Get());
 }
 uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
