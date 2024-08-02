@@ -2,6 +2,7 @@
 #define GP2VKT_GP2_VKPIPELINELAYOUT_H_
 // Includes
 #include <vulkan/vulkan_core.h>
+#include <vector>
 
 // Class Forward Declarations
 
@@ -12,7 +13,7 @@ class GP2_VkPipelineLayout final
 public:
 	// Constructors and Destructor
 	GP2_VkPipelineLayout() = default;
-	GP2_VkPipelineLayout(const VkDevice& device);
+	GP2_VkPipelineLayout(const VkDevice& device, const std::vector<VkDescriptorSetLayout>& setLayouts);
 	~GP2_VkPipelineLayout();
 	
 	// Copy and Move semantics

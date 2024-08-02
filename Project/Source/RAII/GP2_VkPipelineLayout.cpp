@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------
 // Constructors
 //-----------------------------------------------------------------
-GP2_VkPipelineLayout::GP2_VkPipelineLayout(const VkDevice& device)
+GP2_VkPipelineLayout::GP2_VkPipelineLayout(const VkDevice& device, const std::vector<VkDescriptorSetLayout>& setLayouts)
 	: m_Device{ device }
 	, m_PipelineLayout{}
 {
@@ -16,8 +16,8 @@ GP2_VkPipelineLayout::GP2_VkPipelineLayout(const VkDevice& device)
 	// Commonly used to pass the transformation matrix to the vertex shader
 	VkPipelineLayoutCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	createInfo.setLayoutCount = 0;
-	createInfo.pSetLayouts = nullptr;
+	createInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+	createInfo.pSetLayouts = setLayouts.data();
 	createInfo.pushConstantRangeCount = 0;
 	createInfo.pPushConstantRanges = nullptr;
 
