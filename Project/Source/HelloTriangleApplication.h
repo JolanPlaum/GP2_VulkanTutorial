@@ -83,6 +83,7 @@ private:
 	std::vector<GP2_VkImageView> m_SwapChainImageViews;
 	std::vector<GP2_VkFramebuffer> m_SwapChainFramebuffers;
 
+	VkDescriptorSetLayout m_DescriptorSetLayout;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
@@ -92,6 +93,9 @@ private:
 	std::unique_ptr<GP2_VkDeviceMemory> m_pIndexBufferMemory;
 	std::unique_ptr<GP2_VkBuffer> m_pVertexIndexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexIndexBufferMemory;
+	std::vector<GP2_VkBuffer> m_UniformBuffers;
+	std::vector<GP2_VkDeviceMemory> m_UniformBufferMemories;
+	std::vector<void*> m_MappedUniformBuffers;
 
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
@@ -112,6 +116,7 @@ private:
 	void Cleanup();
 
 	void DrawFrame();
+	void UpdateUniformBuffer(uint32_t currentImage);
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height);
 
@@ -155,6 +160,7 @@ private:
 
 	void CreateRenderPass(VkFormat format);
 
+	void CreateDescriptorSetLayout();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
@@ -166,6 +172,7 @@ private:
 	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
 	void CreateIndexBuffer(const std::vector<uint16_t>& indices);
 	void CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+	void CreateUniformBuffers();
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 

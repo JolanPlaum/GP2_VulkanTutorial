@@ -13,8 +13,13 @@
 #include <set>
 #include <limits>
 #include <algorithm>
+#include <chrono>
 
 #include "RAII/GP2_VkShaderModule.h"
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 
 //-----------------------------------------------------------------
@@ -77,10 +82,12 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 	CreateFramebuffers();
 
-	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get());
+	CreateDescriptorSetLayout();
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_DescriptorSetLayout });
 	CreateGraphicsPipeline();
 
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
+	CreateUniformBuffers();
 
 	CreateCommandPool();
 	RecordCommandBuffers();
@@ -105,11 +112,14 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 
+	m_UniformBufferMemories.clear();
+	m_UniformBuffers.clear();
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
+	vkDestroyDescriptorSetLayout(m_pDevice->Get(), m_DescriptorSetLayout, nullptr);
 
 	CleanupSwapChain();
 
@@ -152,6 +162,9 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Reset fence if an image was succesfully acquired
 	vkResetFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get());
+
+	// Update model-view-projection matrices
+	UpdateUniformBuffer(m_CurrentFrame);
 
 	// Submit the recorded command buffer to the GPU
 	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame].Get() };
@@ -205,6 +218,31 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Advance to the next frame
 	++m_CurrentFrame %= config::MAX_FRAMES_IN_FLIGHT;
+}
+void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
+{
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	// Calculate how much time has passed since start
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo{};
+
+	// Model Matrix
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	// View Matrix
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	// Projection Matrix
+	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
+
+	// Compensate for inverted Y (GLM) by flipping the sign on Y axis in the projection matrix
+	ubo.proj[1][1] *= -1;
+
+	// Copy data to the mapped uniform buffer
+	memcpy(m_MappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
 }
 
 void HelloTriangleApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -819,6 +857,27 @@ void HelloTriangleApplication::CreateRenderPass(VkFormat format)
 	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_pDevice->Get(), std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
 }
 
+void HelloTriangleApplication::CreateDescriptorSetLayout()
+{
+	// Uniform Buffer Object layout
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+	// Create info
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uboLayoutBinding;
+
+	// Create descriptor set layout
+	if (vkCreateDescriptorSetLayout(m_pDevice->Get(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create descriptor set layout!");
+	}
+}
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
@@ -1220,6 +1279,27 @@ void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex>
 
 	// Transfer staging buffer to vertex index buffer
 	CopyBuffer(stagingBuffer.Get(), m_pVertexIndexBuffer->Get(), bufferSize);
+}
+void HelloTriangleApplication::CreateUniformBuffers()
+{
+	VkDeviceSize bufferSize{ sizeof(UniformBufferObject) };
+	size_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
+
+	m_UniformBuffers.resize(bufferCount);
+	m_UniformBufferMemories.resize(bufferCount);
+	m_MappedUniformBuffers.resize(bufferCount);
+
+	for (size_t i{ 0 }; i < bufferCount; ++i)
+	{
+		CreateBuffer(
+			bufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			m_UniformBuffers[i],
+			m_UniformBufferMemories[i]);
+
+		vkMapMemory(m_pDevice->Get(), m_UniformBufferMemories[i].Get(), 0, bufferSize, 0, &m_MappedUniformBuffers[i]);
+	}
 }
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
