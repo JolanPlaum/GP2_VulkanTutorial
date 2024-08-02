@@ -442,6 +442,12 @@ void HelloTriangleApplication::PickPhysicalDevice()
 }
 bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 {
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+	bool isGPU = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ||
+		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
+		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
 	bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -452,7 +458,7 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 		swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 	}
 
-	return indices.IsComplete() && extensionsSupported && swapChainAdequate;
+	return isGPU && indices.IsComplete() && extensionsSupported && swapChainAdequate;
 }
 QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 {
