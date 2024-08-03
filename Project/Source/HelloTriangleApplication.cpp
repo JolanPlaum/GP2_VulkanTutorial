@@ -115,7 +115,7 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 
-	vkDestroyDescriptorPool(m_pDevice->Get(), m_DescriptorPool, nullptr);
+	m_pDescriptorPool = nullptr;
 
 	m_UniformBufferMemories.clear();
 	m_UniformBuffers.clear();
@@ -1375,17 +1375,8 @@ void HelloTriangleApplication::CreateDescriptorPool()
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	poolSize.descriptorCount = bufferCount;
 
-	// Create info
-	VkDescriptorPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.maxSets = bufferCount;
-	poolInfo.poolSizeCount = 1;
-	poolInfo.pPoolSizes = &poolSize;
-
-	// Create descriptor pool
-	if (vkCreateDescriptorPool(m_pDevice->Get(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor pool!");
-	}
+	// Create descriptor pool resource
+	m_pDescriptorPool = std::make_unique<GP2_VkDescriptorPool>(m_pDevice->Get(), bufferCount, std::vector{ poolSize });
 }
 void HelloTriangleApplication::AllocateDescriptorSets()
 {
@@ -1398,7 +1389,7 @@ void HelloTriangleApplication::AllocateDescriptorSets()
 	// Allocate info
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_DescriptorPool; // Descriptor pool to allocate from
+	allocInfo.descriptorPool = m_pDescriptorPool->Get(); // Descriptor pool to allocate from
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size()); // Number of descriptor sets to allocate
 	allocInfo.pSetLayouts = layouts.data(); // Specifies how each corresponding descriptor set is allocated
 

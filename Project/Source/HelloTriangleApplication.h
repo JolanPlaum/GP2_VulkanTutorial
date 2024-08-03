@@ -19,6 +19,7 @@
 #include "RAII/GP2_VkBuffer.h"
 #include "RAII/GP2_VkDeviceMemory.h"
 #include "RAII/GP2_VkDescriptorSetLayout.h"
+#include "RAII/GP2_VkDescriptorPool.h"
 #include "GP2_CommandBuffers.h"
 
 // Class Forward Declarations
@@ -98,7 +99,7 @@ private:
 	std::vector<GP2_VkDeviceMemory> m_UniformBufferMemories;
 	std::vector<void*> m_MappedUniformBuffers;
 
-	VkDescriptorPool m_DescriptorPool; // TODO: RAII
+	std::unique_ptr<GP2_VkDescriptorPool> m_pDescriptorPool;
 	std::vector<VkDescriptorSet> m_DescriptorSets; // TODO: Abstraction class
 
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;

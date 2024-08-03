@@ -47,6 +47,7 @@ set(SOURCES
     "Source/RAII/GP2_VkBuffer.h" "Source/RAII/GP2_VkBuffer.cpp"
     "Source/RAII/GP2_VkDeviceMemory.h" "Source/RAII/GP2_VkDeviceMemory.cpp"
     "Source/RAII/GP2_VkDescriptorSetLayout.h" "Source/RAII/GP2_VkDescriptorSetLayout.cpp"
+    "Source/RAII/GP2_VkDescriptorPool.h" "Source/RAII/GP2_VkDescriptorPool.cpp"
 )
 
 # Create the executable
