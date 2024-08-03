@@ -98,6 +98,9 @@ private:
 	std::vector<GP2_VkDeviceMemory> m_UniformBufferMemories;
 	std::vector<void*> m_MappedUniformBuffers;
 
+	VkDescriptorPool m_DescriptorPool; // TODO: RAII
+	std::vector<VkDescriptorSet> m_DescriptorSets; // TODO: Abstraction class
+
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
@@ -176,6 +179,9 @@ private:
 	void CreateUniformBuffers();
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+	void CreateDescriptorPool();
+	void AllocateDescriptorSets();
 
 	void CreateSyncObjects();
 	void DestroySyncObjects();

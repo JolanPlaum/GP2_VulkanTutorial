@@ -89,6 +89,9 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 
+	CreateDescriptorPool();
+	AllocateDescriptorSets();
+
 	CreateCommandPool();
 	RecordCommandBuffers();
 
@@ -111,6 +114,8 @@ void HelloTriangleApplication::Cleanup()
 	DestroySyncObjects();
 
 	m_pCommandBuffers = nullptr;
+
+	vkDestroyDescriptorPool(m_pDevice->Get(), m_DescriptorPool, nullptr);
 
 	m_UniformBufferMemories.clear();
 	m_UniformBuffers.clear();
@@ -165,6 +170,11 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Update model-view-projection matrices
 	UpdateUniformBuffer(m_CurrentFrame);
+
+	// Record a command buffer which draws the scene onto the acquired image
+	// Needed to update descriptor set data (model-view-projection UBO data)
+	vkResetCommandBuffer(m_pCommandBuffers->Get()[imageIndex], 0);
+	RecordCommandBuffer(m_pCommandBuffers->Get()[imageIndex], imageIndex);
 
 	// Submit the recorded command buffer to the GPU
 	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame].Get() };
@@ -958,7 +968,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // determines how fragments are generated for geometry (requires GPU feature if not fill)
 	rasterizer.lineWidth = 1.0f; // describes thickness of lines (requires GPU feature if thicker than 1.0f)
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT; // determines type of culling
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE; // specifies vertex order
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; // specifies vertex order
 	rasterizer.depthBiasEnable = VK_FALSE; // if true allows depth values to be altered
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;
@@ -1142,6 +1152,9 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 
 		// Bind index buffer
 		vkCmdBindIndexBuffer(commandBuffer, m_pVertexIndexBuffer->Get(), sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
+
+		// Bind the right descriptor set
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
 
 		// TODO: CmdDraw get rid of magic numbers
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
@@ -1351,6 +1364,76 @@ uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryP
 	}
 
 	throw std::runtime_error("failed to find suitable memory type!");
+}
+
+void HelloTriangleApplication::CreateDescriptorPool()
+{
+	uint32_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
+
+	// Describes which descriptor type(s) are used and how many of each type
+	VkDescriptorPoolSize poolSize{};
+	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSize.descriptorCount = bufferCount;
+
+	// Create info
+	VkDescriptorPoolCreateInfo poolInfo{};
+	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.maxSets = bufferCount;
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolSize;
+
+	// Create descriptor pool
+	if (vkCreateDescriptorPool(m_pDevice->Get(), &poolInfo, nullptr, &m_DescriptorPool) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create descriptor pool!");
+	}
+}
+void HelloTriangleApplication::AllocateDescriptorSets()
+{
+	uint32_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
+
+	// In our case we will create one descriptor set for each frame in flight, all with the same layout.
+	// Unfortunately we do need all the copies of the layout because the next function expects an array matching the number of sets.
+	std::vector<VkDescriptorSetLayout> layouts{ bufferCount, m_pDescriptorSetLayout->Get() };
+
+	// Allocate info
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = m_DescriptorPool; // Descriptor pool to allocate from
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size()); // Number of descriptor sets to allocate
+	allocInfo.pSetLayouts = layouts.data(); // Specifies how each corresponding descriptor set is allocated
+
+	// Allocate descriptor sets
+	m_DescriptorSets.resize(bufferCount);
+	if (vkAllocateDescriptorSets(m_pDevice->Get(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) {
+		throw std::runtime_error("failed to allocate descriptor sets!");
+	}
+
+	// Populate every descriptor set
+	for (size_t i{}; i < bufferCount; ++i)
+	{
+		// Descriptors that refer to buffers are configured with a VkDescriptorBufferInfo struct
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_UniformBuffers[i].Get();
+		bufferInfo.offset = 0; // TODO: UniformBuffer AllocateDescriptorSets have 1 VkBuffer for UBO & link here
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		// The configuration of descriptors
+		VkWriteDescriptorSet descriptorWrite{};
+		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrite.dstSet = m_DescriptorSets[i]; // Descriptor set to update
+		descriptorWrite.dstBinding = 0; // Binding index
+		descriptorWrite.dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+
+		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrite.descriptorCount = 1;
+
+		descriptorWrite.pBufferInfo = &bufferInfo;
+		descriptorWrite.pImageInfo = nullptr; // Optional
+		descriptorWrite.pTexelBufferView = nullptr; // Optional
+
+		// Update the configuration of the descriptor(s)
+		vkUpdateDescriptorSets(m_pDevice->Get(), 1, &descriptorWrite, 0, nullptr);
+	}
 }
 
 void HelloTriangleApplication::CreateSyncObjects()
