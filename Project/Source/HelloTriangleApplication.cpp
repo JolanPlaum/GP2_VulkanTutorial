@@ -82,7 +82,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 	CreateFramebuffers();
 
-	CreateDescriptorSetLayout();
+	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ GetLayoutBindingUBO() });
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_pDescriptorSetLayout->Get()});
 	CreateGraphicsPipeline();
 
@@ -865,7 +865,7 @@ void HelloTriangleApplication::CreateRenderPass(VkFormat format)
 	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_pDevice->Get(), std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
 }
 
-void HelloTriangleApplication::CreateDescriptorSetLayout()
+VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingUBO()
 {
 	// Uniform Buffer Object layout
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -875,8 +875,7 @@ void HelloTriangleApplication::CreateDescriptorSetLayout()
 	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
-	// Create descriptor set layout resource
-	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ uboLayoutBinding });
+	return uboLayoutBinding;
 }
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {

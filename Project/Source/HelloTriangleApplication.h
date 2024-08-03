@@ -161,7 +161,7 @@ private:
 
 	void CreateRenderPass(VkFormat format);
 
-	void CreateDescriptorSetLayout();
+	static VkDescriptorSetLayoutBinding GetLayoutBindingUBO();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
