@@ -18,6 +18,7 @@
 #include "RAII/GP2_VkDevice.h"
 #include "RAII/GP2_VkBuffer.h"
 #include "RAII/GP2_VkDeviceMemory.h"
+#include "RAII/GP2_VkDescriptorSetLayout.h"
 #include "GP2_CommandBuffers.h"
 
 // Class Forward Declarations
@@ -83,7 +84,7 @@ private:
 	std::vector<GP2_VkImageView> m_SwapChainImageViews;
 	std::vector<GP2_VkFramebuffer> m_SwapChainFramebuffers;
 
-	VkDescriptorSetLayout m_DescriptorSetLayout;
+	std::unique_ptr<GP2_VkDescriptorSetLayout> m_pDescriptorSetLayout;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 

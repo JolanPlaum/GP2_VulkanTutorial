@@ -83,7 +83,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateFramebuffers();
 
 	CreateDescriptorSetLayout();
-	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_DescriptorSetLayout });
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_pDescriptorSetLayout->Get()});
 	CreateGraphicsPipeline();
 
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
@@ -119,7 +119,7 @@ void HelloTriangleApplication::Cleanup()
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
-	vkDestroyDescriptorSetLayout(m_pDevice->Get(), m_DescriptorSetLayout, nullptr);
+	m_pDescriptorSetLayout = nullptr;
 
 	CleanupSwapChain();
 
@@ -243,6 +243,8 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 
 	// Copy data to the mapped uniform buffer
 	memcpy(m_MappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
+	/* TODO: MVP-MATRIX using a UBO this way is not the most efficient way to pass frequently changing values\
+	to the shader. A more efficient way to pass a small buffer of data to shaders are push constants*/
 }
 
 void HelloTriangleApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -873,16 +875,8 @@ void HelloTriangleApplication::CreateDescriptorSetLayout()
 	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
-	// Create info
-	VkDescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &uboLayoutBinding;
-
-	// Create descriptor set layout
-	if (vkCreateDescriptorSetLayout(m_pDevice->Get(), &layoutInfo, nullptr, &m_DescriptorSetLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor set layout!");
-	}
+	// Create descriptor set layout resource
+	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ uboLayoutBinding });
 }
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
