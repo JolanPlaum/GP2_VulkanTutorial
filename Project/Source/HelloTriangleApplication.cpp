@@ -114,8 +114,7 @@ void HelloTriangleApplication::Cleanup()
 	DestroySyncObjects();
 
 	m_pCommandBuffers = nullptr;
-
-	m_pDescriptorPool = nullptr;
+	m_pDescriptorSets = nullptr;
 
 	m_UniformBufferMemories.clear();
 	m_UniformBuffers.clear();
@@ -1156,7 +1155,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		vkCmdBindIndexBuffer(commandBuffer, m_pVertexIndexBuffer->Get(), sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
 
 		// Bind the right descriptor set
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_DescriptorSets[m_CurrentFrame], 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
 
 		// TODO: CmdDraw get rid of magic numbers
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
@@ -1378,31 +1377,16 @@ void HelloTriangleApplication::CreateDescriptorPool()
 	poolSize.descriptorCount = bufferCount;
 
 	// Create descriptor pool resource
-	m_pDescriptorPool = std::make_unique<GP2_VkDescriptorPool>(m_pDevice->Get(), bufferCount, std::vector{ poolSize });
+	m_pDescriptorSets = std::make_unique<PoolDescriptorSets>(
+		m_pDevice->Get(),
+		std::vector{ poolSize },
+		m_pDescriptorSetLayout->Get(),
+		bufferCount);
 }
 void HelloTriangleApplication::AllocateDescriptorSets()
 {
-	uint32_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
-
-	// In our case we will create one descriptor set for each frame in flight, all with the same layout.
-	// Unfortunately we do need all the copies of the layout because the next function expects an array matching the number of sets.
-	std::vector<VkDescriptorSetLayout> layouts{ bufferCount, m_pDescriptorSetLayout->Get() };
-
-	// Allocate info
-	VkDescriptorSetAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = m_pDescriptorPool->Get(); // Descriptor pool to allocate from
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size()); // Number of descriptor sets to allocate
-	allocInfo.pSetLayouts = layouts.data(); // Specifies how each corresponding descriptor set is allocated
-
-	// Allocate descriptor sets
-	m_DescriptorSets.resize(bufferCount);
-	if (vkAllocateDescriptorSets(m_pDevice->Get(), &allocInfo, m_DescriptorSets.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate descriptor sets!");
-	}
-
 	// Populate every descriptor set
-	for (size_t i{}; i < bufferCount; ++i)
+	for (size_t i{}; i < m_pDescriptorSets->Get().size(); ++i)
 	{
 		// Descriptors that refer to buffers are configured with a VkDescriptorBufferInfo struct
 		VkDescriptorBufferInfo bufferInfo{};
@@ -1413,7 +1397,7 @@ void HelloTriangleApplication::AllocateDescriptorSets()
 		// The configuration of descriptors
 		VkWriteDescriptorSet descriptorWrite{};
 		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_DescriptorSets[i]; // Descriptor set to update
+		descriptorWrite.dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
 		descriptorWrite.dstBinding = 0; // Binding index
 		descriptorWrite.dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
 

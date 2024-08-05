@@ -21,6 +21,7 @@
 #include "RAII/GP2_VkDescriptorSetLayout.h"
 #include "RAII/GP2_VkDescriptorPool.h"
 #include "GP2_CommandBuffers.h"
+#include "PoolDescriptorSets.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -99,9 +100,7 @@ private:
 	std::vector<GP2_VkDeviceMemory> m_UniformBufferMemories;
 	std::vector<void*> m_MappedUniformBuffers;
 
-	std::unique_ptr<GP2_VkDescriptorPool> m_pDescriptorPool;
-	std::vector<VkDescriptorSet> m_DescriptorSets; // TODO: Abstraction class
-
+	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
