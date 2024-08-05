@@ -180,8 +180,8 @@ private:
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	void CreateDescriptorPool();
-	void AllocateDescriptorSets();
+	void CreateDescriptorSets();
+	void UpdateDescriptorSets();
 
 	void CreateSyncObjects();
 	void DestroySyncObjects();

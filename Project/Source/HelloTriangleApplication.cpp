@@ -89,8 +89,8 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 
-	CreateDescriptorPool();
-	AllocateDescriptorSets();
+	CreateDescriptorSets();
+	UpdateDescriptorSets();
 
 	CreateCommandPool();
 	RecordCommandBuffers();
@@ -1367,23 +1367,23 @@ uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryP
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void HelloTriangleApplication::CreateDescriptorPool()
+void HelloTriangleApplication::CreateDescriptorSets()
 {
-	uint32_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
+	uint32_t descriptorSetCount{ config::MAX_FRAMES_IN_FLIGHT };
 
 	// Describes which descriptor type(s) are used and how many of each type
 	VkDescriptorPoolSize poolSize{};
 	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = bufferCount;
+	poolSize.descriptorCount = descriptorSetCount;
 
 	// Create descriptor pool resource
 	m_pDescriptorSets = std::make_unique<PoolDescriptorSets>(
 		m_pDevice->Get(),
 		std::vector{ poolSize },
 		m_pDescriptorSetLayout->Get(),
-		bufferCount);
+		descriptorSetCount);
 }
-void HelloTriangleApplication::AllocateDescriptorSets()
+void HelloTriangleApplication::UpdateDescriptorSets()
 {
 	// Populate every descriptor set
 	for (size_t i{}; i < m_pDescriptorSets->Get().size(); ++i)
