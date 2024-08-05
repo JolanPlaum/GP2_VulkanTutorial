@@ -877,6 +877,8 @@ void HelloTriangleApplication::CreateRenderPass(VkFormat format)
 
 VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingUBO()
 {
+	// Within 1 descriptor set layout binding has to be the same type of variable
+
 	// Uniform Buffer Object layout
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
 	uboLayoutBinding.binding = 0;
@@ -1416,7 +1418,7 @@ void HelloTriangleApplication::AllocateDescriptorSets()
 		descriptorWrite.dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
 
 		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
 
 		descriptorWrite.pBufferInfo = &bufferInfo;
 		descriptorWrite.pImageInfo = nullptr; // Optional
