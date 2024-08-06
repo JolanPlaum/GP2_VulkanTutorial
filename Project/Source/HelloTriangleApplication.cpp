@@ -86,6 +86,7 @@ void HelloTriangleApplication::InitVulkan()
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_pDescriptorSetLayout->Get()});
 	CreateGraphicsPipeline();
 
+	CreateVertexBuffer(config::Vertices2);
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 
@@ -120,6 +121,8 @@ void HelloTriangleApplication::Cleanup()
 	m_pUniformBuffer = nullptr;
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
+	m_pVertexBufferMemory = nullptr;
+	m_pVertexBuffer = nullptr;
 
 	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
 	m_pPipelineLayout = nullptr;
@@ -458,6 +461,8 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 	bool isGPU = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ||
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+	std::cout << deviceProperties.deviceName << " =" << deviceProperties.deviceType << std::endl;
+	std::cout << "Max Vertex Input Bindings: " << deviceProperties.limits.maxVertexInputBindings << std::endl;
 
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
@@ -1076,7 +1081,7 @@ void HelloTriangleApplication::CreateCommandPool()
 	m_pCommandBuffers = std::make_unique<GP2_CommandBuffers>(
 		m_pDevice->Get(),
 		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(),
-		m_SwapChainImages.size());
+		static_cast<uint32_t>(m_SwapChainImages.size()));
 }
 void HelloTriangleApplication::RecordCommandBuffers()
 {
@@ -1146,19 +1151,30 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		}
 
-		// Bind vertex buffer
-		std::vector<VkBuffer> vertexBuffers{ m_pVertexIndexBuffer->Get() };
-		std::vector<VkDeviceSize> offsets{ 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
-
 		// Bind index buffer
 		vkCmdBindIndexBuffer(commandBuffer, m_pVertexIndexBuffer->Get(), sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
 
 		// Bind the right descriptor set
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
 
-		// TODO: CmdDraw get rid of magic numbers
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
+		{
+			// Bind vertex buffer
+			std::vector<VkBuffer> vertexBuffers{ m_pVertexIndexBuffer->Get() };
+			std::vector<VkDeviceSize> offsets{ 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
+
+			// TODO: CmdDraw get rid of magic numbers
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
+		}
+		{
+			// Bind vertex buffer
+			std::vector<VkBuffer> vertexBuffers{ m_pVertexBuffer->Get() };
+			std::vector<VkDeviceSize> offsets{ 0 };
+			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
+
+			// TODO: CmdDraw get rid of magic numbers
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
+		}
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
