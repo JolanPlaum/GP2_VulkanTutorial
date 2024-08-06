@@ -96,8 +96,8 @@ private:
 	std::unique_ptr<GP2_VkDeviceMemory> m_pIndexBufferMemory;
 	std::unique_ptr<GP2_VkBuffer> m_pVertexIndexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexIndexBufferMemory;
-	std::vector<GP2_VkBuffer> m_UniformBuffers;
-	std::vector<GP2_VkDeviceMemory> m_UniformBufferMemories;
+	std::unique_ptr<GP2_VkBuffer> m_pUniformBuffer;
+	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory;
 	std::vector<void*> m_MappedUniformBuffers;
 
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;

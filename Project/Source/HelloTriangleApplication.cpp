@@ -116,8 +116,8 @@ void HelloTriangleApplication::Cleanup()
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
 
-	m_UniformBufferMemories.clear();
-	m_UniformBuffers.clear();
+	m_pUniformBufferMemory = nullptr;
+	m_pUniformBuffer = nullptr;
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
 
@@ -1298,20 +1298,24 @@ void HelloTriangleApplication::CreateUniformBuffers()
 	VkDeviceSize bufferSize{ sizeof(UniformBufferObject) };
 	size_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
 
-	m_UniformBuffers.resize(bufferCount);
-	m_UniformBufferMemories.resize(bufferCount);
+	m_pUniformBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pUniformBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
 	m_MappedUniformBuffers.resize(bufferCount);
 
+	CreateBuffer(
+		bufferSize * bufferCount,
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		*m_pUniformBuffer,
+		*m_pUniformBufferMemory);
+
+	void* data{};
+	vkMapMemory(m_pDevice->Get(), m_pUniformBufferMemory->Get(), 0, bufferSize * bufferCount, 0, &data);
+
+	char* byteData = static_cast<char*>(data);
 	for (size_t i{ 0 }; i < bufferCount; ++i)
 	{
-		CreateBuffer(
-			bufferSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			m_UniformBuffers[i],
-			m_UniformBufferMemories[i]);
-
-		vkMapMemory(m_pDevice->Get(), m_UniformBufferMemories[i].Get(), 0, bufferSize, 0, &m_MappedUniformBuffers[i]);
+		m_MappedUniformBuffers[i] = (byteData + bufferSize * i);
 	}
 }
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
@@ -1390,9 +1394,9 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 	{
 		// Descriptors that refer to buffers are configured with a VkDescriptorBufferInfo struct
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_UniformBuffers[i].Get();
-		bufferInfo.offset = 0; // TODO: UniformBuffer AllocateDescriptorSets have 1 VkBuffer for UBO & link here
+		bufferInfo.buffer = m_pUniformBuffer->Get();
 		bufferInfo.range = sizeof(UniformBufferObject);
+		bufferInfo.offset = bufferInfo.range * i;
 
 		// The configuration of descriptors
 		VkWriteDescriptorSet descriptorWrite{};
