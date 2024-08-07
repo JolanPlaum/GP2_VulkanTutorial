@@ -90,6 +90,10 @@ private:
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
 	VkPipeline m_GraphicsPipeline; // TODO: RAII
 
+	// TODO: create a mesh object that holds Vertex/Index data
+	// TODO: create a vertexindex buffer per mesh object
+	// TODO: store offset for vertex and index in the buffer
+	// TODO: make a single DeviceMemory for all the meshes
 	std::unique_ptr<GP2_VkBuffer> m_pVertexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexBufferMemory;
 	std::unique_ptr<GP2_VkBuffer> m_pIndexBuffer;
