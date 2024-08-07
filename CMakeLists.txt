@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 
 # Project Name
 project(GP2_VulkanTutorial)
@@ -22,6 +22,8 @@ find_package(Vulkan REQUIRED)
 
 # Include Directories
 include_directories(${Vulkan_INCLUDE_DIRS})
+
+set(SAVE_FILES_DIR "${CMAKE_CURRENT_BINARY_DIR}/Includes")
 
 add_subdirectory(Project)
 
