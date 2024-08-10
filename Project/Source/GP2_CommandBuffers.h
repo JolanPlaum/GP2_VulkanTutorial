@@ -26,6 +26,7 @@ public:
 	// Public Member Functions
 	//---------------------------
 	std::vector<VkCommandBuffer>& Get();
+	//TODO: add function to add/remove command buffers
 
 
 private:

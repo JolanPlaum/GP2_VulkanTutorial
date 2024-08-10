@@ -104,6 +104,9 @@ private:
 	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory;
 	std::vector<void*> m_MappedUniformBuffers;
 
+	VkImage m_TextureImage; // TODO: RAII
+	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
+
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
 
@@ -175,13 +178,19 @@ private:
 	void CreateCommandPool();
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	std::unique_ptr<GP2_CommandBuffers> BeginSingleTimeCommands();
+	void EndSingleTimeCommands(std::unique_ptr<GP2_CommandBuffers> pCommandBuffer);
 
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
 	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
 	void CreateIndexBuffer(const std::vector<uint16_t>& indices);
 	void CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 	void CreateUniformBuffers();
+	void CreateTextureImage(const char* filePath, int nrChannels);
+	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 	void CreateDescriptorSets();

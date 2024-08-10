@@ -4,6 +4,8 @@
 #include "HelloTriangleApplication.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include "Utils.h"
 #include "DataTypes.h"
 #include <stdexcept>
@@ -89,6 +91,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexBuffer(config::Vertices2);
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
+	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
 
 	CreateDescriptorSets();
 	UpdateDescriptorSets();
@@ -116,6 +119,9 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
+
+	m_pTextureImageMemory = nullptr;
+	vkDestroyImage(m_pDevice->Get(), m_TextureImage, nullptr);
 
 	m_pUniformBufferMemory = nullptr;
 	m_pUniformBuffer = nullptr;
@@ -461,8 +467,6 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 	bool isGPU = deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ||
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
-	std::cout << deviceProperties.deviceName << " =" << deviceProperties.deviceType << std::endl;
-	std::cout << "Max Vertex Input Bindings: " << deviceProperties.limits.maxVertexInputBindings << std::endl;
 
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
@@ -1183,7 +1187,75 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		throw std::runtime_error("failed to record command buffer!");
 	}
 }
+std::unique_ptr<GP2_CommandBuffers> HelloTriangleApplication::BeginSingleTimeCommands()
+{
+	// Temporary command buffer
+	auto pCommandBuffer = std::make_unique<GP2_CommandBuffers>(
+		m_pDevice->Get(),
+		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), // TODO: use a transfer family queue
+		1
+	);
 
+	// Specify command buffer usage
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	// Begin recording commands
+	vkBeginCommandBuffer(pCommandBuffer->Get()[0], &beginInfo);
+
+	return std::move(pCommandBuffer);
+}
+void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<GP2_CommandBuffers> pCommandBuffer)
+{
+	// End recording commands
+	vkEndCommandBuffer(pCommandBuffer->Get()[0]);
+
+	// Execute the commands
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &pCommandBuffer->Get()[0];
+
+	vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(m_GraphicsQueue);
+}
+
+void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, GP2_VkDeviceMemory& imageMemory)
+{
+	// Image create info
+	VkImageCreateInfo imageInfo{};
+	{
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D; // Specifies coordinate system
+		imageInfo.format = format; // Should be the same format as the pixels in the buffer
+		imageInfo.extent.width = width;
+		imageInfo.extent.height = height;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT; // Only relevant for images used as attachments
+		imageInfo.tiling = tiling; // This can not be changed at a later time
+		imageInfo.usage = usage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Specified sharing between queue families
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Either UNDEFINED or PREINITIALIZED
+	}
+
+	// Create image
+	if (vkCreateImage(m_pDevice->Get(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image!");
+	}
+
+	// Create image memory requirements
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(m_pDevice->Get(), m_TextureImage, &memRequirements);
+
+	// Allocate image memory resource
+	imageMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
+
+	// Associate memory with image
+	vkBindImageMemory(m_pDevice->Get(), image, imageMemory.Get(), 0);
+}
 void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
 {
 	// Create buffer resource
@@ -1334,40 +1406,165 @@ void HelloTriangleApplication::CreateUniformBuffers()
 		m_MappedUniformBuffers[i] = (byteData + bufferSize * i);
 	}
 }
+void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrChannels)
+{
+	// Load image from the given file path
+	int texWidth, texHeight, texChannels;
+	stbi_uc* pixels = stbi_load(filePath, &texWidth, &texHeight, &texChannels, nrChannels);
+	if (!pixels) {
+		throw std::runtime_error("failed to load texture image!");
+	}
+
+	// Calculate amount of pixels (bytes)
+	VkDeviceSize imageSize = texWidth * texHeight * nrChannels;
+
+	// Create staging buffer
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	CreateBuffer(
+		imageSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
+
+	// Copy vertices data to staging buffer
+	void* data{};
+	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, imageSize, 0, &data);
+	memcpy(data, pixels, imageSize);
+	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+
+	// Create image
+	m_pTextureImageMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateImage(
+		texWidth,
+		texHeight,
+		VK_FORMAT_R8G8B8A8_SRGB,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		m_TextureImage,
+		*m_pTextureImageMemory);
+
+	// Transfer staging buffer to texture image
+	// TODO: combine operations in a single command buffer instead of waiting for queue to become idle every time
+	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyBufferToImage(stagingBuffer.Get(), m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	// Release resources
+	stbi_image_free(pixels);
+}
+void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+{
+	// Temporary command buffer
+	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
+
+
+	// Use image memory barrier to perform layout transition
+	VkImageMemoryBarrier barrier{};
+	{
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.oldLayout = oldLayout; // Use UNDEFINED if you don't care about existing contents of the image
+		barrier.newLayout = newLayout;
+
+		// If the barrier is used to transfer queue family ownership
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // Set to IGNORED if not used
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // Set to IGNORED if not used
+
+		barrier.image = image;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel = 0;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+
+		// Specifies operations that must happen before barrier and operations that must wait on the barrier
+		barrier.srcAccessMask = 0; // Set seperately below
+		barrier.dstAccessMask = 0; // Set seperately below
+	}
+
+	// Set stage & access masks
+	VkPipelineStageFlags sourceStage;
+	VkPipelineStageFlags destinationStage;
+	if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcAccessMask = 0;
+		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+		destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	}
+	else {
+		throw std::invalid_argument("unsupported layout transition!");
+	}
+
+	// Pipeline barrier command
+	vkCmdPipelineBarrier(
+		pCommandBuffer->Get()[0],
+		sourceStage, destinationStage,
+		0, // dependency flags, either 0 or VK_DEPENDENCY_BY_REGION_BIT
+		0, nullptr, // memory barriers
+		0, nullptr, // buffer memory barriers
+		1, &barrier // image memory barriers
+	);
+
+
+	// End recording & execute commands
+	EndSingleTimeCommands(std::move(pCommandBuffer));
+}
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	// Temporary command buffer
-	GP2_CommandBuffers commandBuffer{
-		m_pDevice->Get(),
-		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), // TODO: use a transfer family queue
-		1
-	};
-
-	// Specify command buffer usage
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	
-	// Begin recording commands
-	vkBeginCommandBuffer(commandBuffer.Get()[0], &beginInfo);
+	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
 
 	// Copy buffer command
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
-	vkCmdCopyBuffer(commandBuffer.Get()[0], srcBuffer, dstBuffer, 1, &copyRegion);
+	vkCmdCopyBuffer(pCommandBuffer->Get()[0], srcBuffer, dstBuffer, 1, &copyRegion);
 
-	// End recording commands
-	vkEndCommandBuffer(commandBuffer.Get()[0]);
+	// End recording & execute commands
+	EndSingleTimeCommands(std::move(pCommandBuffer));
+}
+void HelloTriangleApplication::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+{
+	// Temporary command buffer
+	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
 
-	// Execute the commands
-	VkSubmitInfo submitInfo{};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer.Get()[0];
-	vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(m_GraphicsQueue);
+	// Image copy info
+	VkBufferImageCopy region{};
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+
+	// Indicate in which parts of the image we want to copy pixels
+	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+	region.imageOffset = { 0, 0, 0 };
+	region.imageExtent = { width, height, 1 };
+
+	// Copy buffer image command
+	vkCmdCopyBufferToImage(
+		pCommandBuffer->Get()[0],
+		buffer,
+		image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&region
+	);
+
+	// End recording & execute commands
+	EndSingleTimeCommands(std::move(pCommandBuffer));
 }
 uint32_t HelloTriangleApplication::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
