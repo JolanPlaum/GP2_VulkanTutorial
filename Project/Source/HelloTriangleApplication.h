@@ -9,6 +9,7 @@
 #include "RAII/GP2_VkSemaphore.h"
 #include "RAII/GP2_VkCommandPool.h"
 #include "RAII/GP2_VkPipelineLayout.h"
+#include "RAII/GP2_VkPipeline.h"
 #include "RAII/GP2_VkRenderPass.h"
 #include "RAII/GP2_VkSwapchainKHR.h"
 #include "RAII/GP2_VkImage.h"
@@ -90,7 +91,7 @@ private:
 
 	std::unique_ptr<GP2_VkDescriptorSetLayout> m_pDescriptorSetLayout;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
-	VkPipeline m_GraphicsPipeline; // TODO: RAII
+	std::unique_ptr<GP2_VkPipeline> m_pGraphicsPipeline;
 
 	// TODO: create a mesh object that holds Vertex/Index data
 	// TODO: create a vertexindex buffer per mesh object

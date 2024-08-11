@@ -134,7 +134,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pVertexBufferMemory = nullptr;
 	m_pVertexBuffer = nullptr;
 
-	vkDestroyPipeline(m_pDevice->Get(), m_GraphicsPipeline, nullptr);
+	m_pGraphicsPipeline = nullptr;
 	m_pPipelineLayout = nullptr;
 	m_pDescriptorSetLayout = nullptr;
 
@@ -1059,10 +1059,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 
-	// Create the graphics pipeline (can create multiple pipelines in a single call)
-	if (vkCreateGraphicsPipelines(m_pDevice->Get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_GraphicsPipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
+	m_pGraphicsPipeline = std::make_unique<GP2_VkPipeline>(m_pDevice->Get(), pipelineInfo);
 }
 VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<char>& code)
 {
@@ -1137,7 +1134,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	{
 		// Bind graphics pipeline
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pGraphicsPipeline->Get());
 
 		// TODO: DynamicState make a big automatic switch to check the dynamic states of the given pipeline and set those values
 		// SET DYNAMIC STATES !!!!! this will depend on what was chosen as dynamic state
