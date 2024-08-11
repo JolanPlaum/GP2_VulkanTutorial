@@ -92,6 +92,8 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
+	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	CreateTextureSampler();
 
 	CreateDescriptorSets();
 	UpdateDescriptorSets();
@@ -120,6 +122,8 @@ void HelloTriangleApplication::Cleanup()
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
 
+	vkDestroySampler(m_pDevice->Get(), m_TextureSampler, nullptr);
+	m_pTextureImageView = nullptr;
 	m_pTextureImageMemory = nullptr;
 	vkDestroyImage(m_pDevice->Get(), m_TextureImage, nullptr);
 
@@ -468,6 +472,9 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ||
 		deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
 
+	VkPhysicalDeviceFeatures deviceFeatures;
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
 	bool extensionsSupported = CheckDeviceExtensionSupport(device);
@@ -478,7 +485,7 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 		swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 	}
 
-	return isGPU && indices.IsComplete() && extensionsSupported && swapChainAdequate;
+	return isGPU && indices.IsComplete() && extensionsSupported && swapChainAdequate && deviceFeatures.samplerAnisotropy;
 }
 QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 {
@@ -565,25 +572,8 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	// TODO: DeviceFeatures make sure this is implemented for final version
 	// Temporarily empty as we currently don't need anything special
 	VkPhysicalDeviceFeatures deviceFeatures{};
+	deviceFeatures.samplerAnisotropy = VK_TRUE; // TODO: match samplerAnisotropy with support for it by physical device through vkGetPhysicalDeviceFeatures
 
-	// Main info structor for logical device
-	VkDeviceCreateInfo createInfo{};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(config::DeviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = config::DeviceExtensions.data();
-	createInfo.pEnabledFeatures = &deviceFeatures;
-
-	if (config::EnableValidationLayers) {
-		// These are ignored by up-to-date implementations
-		// Good idea to set them anyway for compatibility with older versions
-		createInfo.enabledLayerCount = static_cast<uint32_t>(config::ValidationLayers.size());
-		createInfo.ppEnabledLayerNames = config::ValidationLayers.data();
-	}
-	else {
-		createInfo.enabledLayerCount = 0;
-	}
 
 	// Create logical device using specified data
 	m_pDevice = std::make_unique<GP2_VkDevice>(m_PhysicalDevice, queueCreateInfos, config::ValidationLayers, config::DeviceExtensions, deviceFeatures);
@@ -1454,6 +1444,42 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 
 	// Release resources
 	stbi_image_free(pixels);
+}
+void HelloTriangleApplication::CreateTextureSampler()
+{
+	// Physical device properties
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
+
+	// Create info
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR; // Specifies how to interpolate texels that are oversampled
+	samplerInfo.minFilter = VK_FILTER_LINEAR; // Specifies how to interpolate texels that are undersampled
+
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+
+	// TODO: match anisotropyEnable with VkPhysicalDeviceFeatures::samperAnisotropy
+	samplerInfo.anisotropyEnable = VK_TRUE; // Disabling will lead to better performance
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // A lower value results in better performance
+
+	samplerInfo.compareEnable = VK_FALSE; // Mainly used for shadow maps
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE; // Specifies if texel coordinates are within [0, 1] range or [0, texWidth/height] range
+
+	// Create sampler
+	if (vkCreateSampler(m_pDevice->Get(), &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create texture sampler!");
+	}
 }
 void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {

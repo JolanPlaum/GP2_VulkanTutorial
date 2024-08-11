@@ -36,7 +36,7 @@ GP2_VkImageView::GP2_VkImageView(const VkDevice& device, const VkImage& image, c
 
 	// Create image view using specified data
 	if (vkCreateImageView(m_Device, &createInfo, nullptr, &m_ImageView) != VK_SUCCESS)
-		throw std::runtime_error("failed to create image views!");
+		throw std::runtime_error("failed to create image view!");
 }
 
 GP2_VkImageView::GP2_VkImageView(GP2_VkImageView&& other) noexcept

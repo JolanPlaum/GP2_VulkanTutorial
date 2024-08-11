@@ -106,6 +106,8 @@ private:
 
 	VkImage m_TextureImage; // TODO: RAII
 	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
+	std::unique_ptr<GP2_VkImageView> m_pTextureImageView;
+	VkSampler m_TextureSampler;
 
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
@@ -188,6 +190,7 @@ private:
 	void CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
 	void CreateUniformBuffers();
 	void CreateTextureImage(const char* filePath, int nrChannels);
+	void CreateTextureSampler();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
