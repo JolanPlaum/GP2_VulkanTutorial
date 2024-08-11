@@ -107,7 +107,7 @@ private:
 	VkImage m_TextureImage; // TODO: RAII
 	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
 	std::unique_ptr<GP2_VkImageView> m_pTextureImageView;
-	VkSampler m_TextureSampler;
+	VkSampler m_TextureSampler; // TODO: RAII
 
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
@@ -174,6 +174,7 @@ private:
 	void CreateRenderPass(VkFormat format);
 
 	static VkDescriptorSetLayoutBinding GetLayoutBindingUBO();
+	static VkDescriptorSetLayoutBinding GetLayoutBindingSampler();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 

@@ -8,6 +8,7 @@ struct Vertex
 {
 	glm::vec2 pos{ 0.f, 0.f };
 	glm::vec3 color{ 0.f, 0.f, 0.f };
+    glm::vec2 texCoord{ 0.f, 0.f };
 
     static constexpr VkVertexInputBindingDescription GetBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -17,8 +18,8 @@ struct Vertex
         return bindingDescription;
     }
 
-    static constexpr std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{}; // One for each member variable
+    static constexpr std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{}; // One for each member variable
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -29,6 +30,11 @@ struct Vertex
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+        attributeDescriptions[2].binding = 0;
+        attributeDescriptions[2].location = 2;
+        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
         return attributeDescriptions;
     }

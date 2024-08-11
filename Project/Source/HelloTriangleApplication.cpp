@@ -84,7 +84,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 	CreateFramebuffers();
 
-	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ GetLayoutBindingUBO() });
+	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler() });
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_pDescriptorSetLayout->Get()});
 	CreateGraphicsPipeline();
 
@@ -887,6 +887,17 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingUBO()
 
 	return uboLayoutBinding;
 }
+VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingSampler()
+{
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+	return samplerLayoutBinding;
+}
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
@@ -917,9 +928,10 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions{
 		Vertex::GetBindingDescription()
 	};
+	auto vertexAttributeDescriptionsArray = Vertex::GetAttributeDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{
-		Vertex::GetAttributeDescriptions()[0],
-		Vertex::GetAttributeDescriptions()[1]
+		vertexAttributeDescriptionsArray.begin(),
+		vertexAttributeDescriptionsArray.end()
 	};
 
 	// Describe the format of vertex data that will be passed to the vertex shader
@@ -1615,14 +1627,15 @@ void HelloTriangleApplication::CreateDescriptorSets()
 	uint32_t descriptorSetCount{ config::MAX_FRAMES_IN_FLIGHT };
 
 	// Describes which descriptor type(s) are used and how many of each type
-	VkDescriptorPoolSize poolSize{};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = descriptorSetCount;
+	std::vector<VkDescriptorPoolSize> poolSizes{
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 * descriptorSetCount },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 * descriptorSetCount }
+	};
 
 	// Create descriptor pool resource
 	m_pDescriptorSets = std::make_unique<PoolDescriptorSets>(
 		m_pDevice->Get(),
-		std::vector{ poolSize },
+		poolSizes,
 		m_pDescriptorSetLayout->Get(),
 		descriptorSetCount);
 }
@@ -1637,22 +1650,32 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		bufferInfo.range = sizeof(UniformBufferObject);
 		bufferInfo.offset = bufferInfo.range * i;
 
+		// Image info
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = m_pTextureImageView->Get();
+		imageInfo.sampler = m_TextureSampler;
+
 		// The configuration of descriptors
-		VkWriteDescriptorSet descriptorWrite{};
-		descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrite.dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
-		descriptorWrite.dstBinding = 0; // Binding index
-		descriptorWrite.dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
+		descriptorWrites[0].dstBinding = 0; // Binding index
+		descriptorWrites[0].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-		descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorWrite.descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
-
-		descriptorWrite.pBufferInfo = &bufferInfo;
-		descriptorWrite.pImageInfo = nullptr; // Optional
-		descriptorWrite.pTexelBufferView = nullptr; // Optional
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
+		descriptorWrites[1].dstBinding = 1; // Binding index
+		descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+		descriptorWrites[1].pImageInfo = &imageInfo;
 
 		// Update the configuration of the descriptor(s)
-		vkUpdateDescriptorSets(m_pDevice->Get(), 1, &descriptorWrite, 0, nullptr);
+		vkUpdateDescriptorSets(m_pDevice->Get(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
