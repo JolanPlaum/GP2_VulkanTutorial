@@ -92,7 +92,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
-	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB);
 	CreateTextureSampler();
 
 	CreateDescriptorSets();
@@ -125,7 +125,7 @@ void HelloTriangleApplication::Cleanup()
 	vkDestroySampler(m_pDevice->Get(), m_TextureSampler, nullptr);
 	m_pTextureImageView = nullptr;
 	m_pTextureImageMemory = nullptr;
-	vkDestroyImage(m_pDevice->Get(), m_TextureImage, nullptr);
+	m_pTextureImage = nullptr;
 
 	m_pUniformBufferMemory = nullptr;
 	m_pUniformBuffer = nullptr;
@@ -1223,40 +1223,20 @@ void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<PoolCommand
 	vkQueueWaitIdle(m_GraphicsQueue);
 }
 
-void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, GP2_VkDeviceMemory& imageMemory)
+void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory)
 {
-	// Image create info
-	VkImageCreateInfo imageInfo{};
-	{
-		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		imageInfo.imageType = VK_IMAGE_TYPE_2D; // Specifies coordinate system
-		imageInfo.format = format; // Should be the same format as the pixels in the buffer
-		imageInfo.extent.width = width;
-		imageInfo.extent.height = height;
-		imageInfo.extent.depth = 1;
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT; // Only relevant for images used as attachments
-		imageInfo.tiling = tiling; // This can not be changed at a later time
-		imageInfo.usage = usage;
-		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Specified sharing between queue families
-		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Either UNDEFINED or PREINITIALIZED
-	}
-
-	// Create image
-	if (vkCreateImage(m_pDevice->Get(), &imageInfo, nullptr, &image) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create image!");
-	}
+	// Create image resource
+	image = std::move(GP2_VkImage{ m_pDevice->Get(), format, { width, height, 1 } , tiling, usage, false });
 
 	// Create image memory requirements
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(m_pDevice->Get(), m_TextureImage, &memRequirements);
+	vkGetImageMemoryRequirements(m_pDevice->Get(), image.Get(), &memRequirements);
 
 	// Allocate image memory resource
 	imageMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with image
-	vkBindImageMemory(m_pDevice->Get(), image, imageMemory.Get(), 0);
+	vkBindImageMemory(m_pDevice->Get(), image.Get(), imageMemory.Get(), 0);
 }
 void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
 {
@@ -1437,6 +1417,7 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
 
 	// Create image
+	m_pTextureImage = std::make_unique<GP2_VkImage>();
 	m_pTextureImageMemory = std::make_unique<GP2_VkDeviceMemory>();
 	CreateImage(
 		texWidth,
@@ -1445,14 +1426,14 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		m_TextureImage,
+		*m_pTextureImage,
 		*m_pTextureImageMemory);
 
 	// Transfer staging buffer to texture image
 	// TODO: combine operations in a single command buffer instead of waiting for queue to become idle every time
-	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	CopyBufferToImage(stagingBuffer.Get(), m_TextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	TransitionImageLayout(m_TextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TransitionImageLayout(m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyBufferToImage(stagingBuffer.Get(), m_pTextureImage->Get(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	TransitionImageLayout(m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Release resources
 	stbi_image_free(pixels);

@@ -11,6 +11,7 @@
 #include "RAII/GP2_VkPipelineLayout.h"
 #include "RAII/GP2_VkRenderPass.h"
 #include "RAII/GP2_VkSwapchainKHR.h"
+#include "RAII/GP2_VkImage.h"
 #include "RAII/GP2_VkImageView.h"
 #include "RAII/GP2_VkFramebuffer.h"
 #include "RAII/GP2_VkSurfaceKHR.h"
@@ -104,7 +105,7 @@ private:
 	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory;
 	std::vector<void*> m_MappedUniformBuffers;
 
-	VkImage m_TextureImage; // TODO: RAII
+	std::unique_ptr<GP2_VkImage> m_pTextureImage;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
 	std::unique_ptr<GP2_VkImageView> m_pTextureImageView;
 	VkSampler m_TextureSampler; // TODO: RAII
@@ -184,7 +185,7 @@ private:
 	std::unique_ptr<PoolCommandBuffers> BeginSingleTimeCommands();
 	void EndSingleTimeCommands(std::unique_ptr<PoolCommandBuffers> pCommandBuffer);
 
-	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, GP2_VkDeviceMemory& imageMemory);
+	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
 	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
 	void CreateIndexBuffer(const std::vector<uint16_t>& indices);

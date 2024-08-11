@@ -53,6 +53,7 @@ set(SOURCES
     "Source/RAII/GP2_VkPipelineLayout.h" "Source/RAII/GP2_VkPipelineLayout.cpp"
     "Source/RAII/GP2_VkRenderPass.h" "Source/RAII/GP2_VkRenderPass.cpp"
     "Source/RAII/GP2_VkSwapchainKHR.h" "Source/RAII/GP2_VkSwapchainKHR.cpp"
+    "Source/RAII/GP2_VkImage.h" "Source/RAII/GP2_VkImage.cpp"
     "Source/RAII/GP2_VkImageView.h" "Source/RAII/GP2_VkImageView.cpp"
     "Source/RAII/GP2_VkFramebuffer.h" "Source/RAII/GP2_VkFramebuffer.cpp"
     "Source/RAII/GP2_VkSurfaceKHR.h" "Source/RAII/GP2_VkSurfaceKHR.cpp"
