@@ -1084,7 +1084,7 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 void HelloTriangleApplication::CreateCommandPool()
 {
 	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
-	m_pCommandBuffers = std::make_unique<GP2_CommandBuffers>(
+	m_pCommandBuffers = std::make_unique<PoolCommandBuffers>(
 		m_pDevice->Get(),
 		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(),
 		static_cast<uint32_t>(m_SwapChainImages.size()));
@@ -1189,10 +1189,10 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		throw std::runtime_error("failed to record command buffer!");
 	}
 }
-std::unique_ptr<GP2_CommandBuffers> HelloTriangleApplication::BeginSingleTimeCommands()
+std::unique_ptr<PoolCommandBuffers> HelloTriangleApplication::BeginSingleTimeCommands()
 {
 	// Temporary command buffer
-	auto pCommandBuffer = std::make_unique<GP2_CommandBuffers>(
+	auto pCommandBuffer = std::make_unique<PoolCommandBuffers>(
 		m_pDevice->Get(),
 		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), // TODO: use a transfer family queue
 		1
@@ -1208,7 +1208,7 @@ std::unique_ptr<GP2_CommandBuffers> HelloTriangleApplication::BeginSingleTimeCom
 
 	return std::move(pCommandBuffer);
 }
-void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<GP2_CommandBuffers> pCommandBuffer)
+void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<PoolCommandBuffers> pCommandBuffer)
 {
 	// End recording commands
 	vkEndCommandBuffer(pCommandBuffer->Get()[0]);
@@ -1496,7 +1496,7 @@ void HelloTriangleApplication::CreateTextureSampler()
 void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
 	// Temporary command buffer
-	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
+	std::unique_ptr<PoolCommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
 
 
 	// Use image memory barrier to perform layout transition
@@ -1560,7 +1560,7 @@ void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat for
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
 	// Temporary command buffer
-	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
+	std::unique_ptr<PoolCommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
 
 	// Copy buffer command
 	VkBufferCopy copyRegion{};
@@ -1575,7 +1575,7 @@ void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer
 void HelloTriangleApplication::CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
 	// Temporary command buffer
-	std::unique_ptr<GP2_CommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
+	std::unique_ptr<PoolCommandBuffers> pCommandBuffer{ BeginSingleTimeCommands() };
 
 	// Image copy info
 	VkBufferImageCopy region{};

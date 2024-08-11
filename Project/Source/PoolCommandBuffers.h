@@ -1,5 +1,5 @@
-#ifndef GP2VKT_GP2_COMMANDBUFFERS_H_
-#define GP2VKT_GP2_COMMANDBUFFERS_H_
+#ifndef GP2VKT_POOLCOMMANDBUFFERS_H_
+#define GP2VKT_POOLCOMMANDBUFFERS_H_
 // Includes
 #include <vulkan/vulkan_core.h>
 #include <vector>
@@ -9,18 +9,18 @@
 
 
 // Class Declaration
-class GP2_CommandBuffers final
+class PoolCommandBuffers final
 {
 public:
 	// Constructors and Destructor
-	GP2_CommandBuffers(const VkDevice& device, uint32_t queueFamilyIndex, uint32_t count);
-	~GP2_CommandBuffers() = default;
+	PoolCommandBuffers(const VkDevice& device, uint32_t queueFamilyIndex, uint32_t count);
+	~PoolCommandBuffers() = default;
 	
 	// Copy and Move semantics
-	GP2_CommandBuffers(const GP2_CommandBuffers& other)					= delete;
-	GP2_CommandBuffers& operator=(const GP2_CommandBuffers& other)		= delete;
-	GP2_CommandBuffers(GP2_CommandBuffers&& other) noexcept				= delete;
-	GP2_CommandBuffers& operator=(GP2_CommandBuffers&& other) noexcept	= delete;
+	PoolCommandBuffers(const PoolCommandBuffers& other)					= delete;
+	PoolCommandBuffers& operator=(const PoolCommandBuffers& other)		= delete;
+	PoolCommandBuffers(PoolCommandBuffers&& other) noexcept				= delete;
+	PoolCommandBuffers& operator=(PoolCommandBuffers&& other) noexcept	= delete;
 
 	//---------------------------
 	// Public Member Functions

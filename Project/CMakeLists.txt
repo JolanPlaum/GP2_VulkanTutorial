@@ -43,7 +43,7 @@ set(SOURCES
     "DataTypes.h"
     "Source/HelloTriangleApplication.h" "Source/HelloTriangleApplication.cpp"
 
-    "Source/GP2_CommandBuffers.h" "Source/GP2_CommandBuffers.cpp"
+    "Source/PoolCommandBuffers.h" "Source/PoolCommandBuffers.cpp"
     "Source/PoolDescriptorSets.h" "Source/PoolDescriptorSets.cpp"
 
     "Source/RAII/GP2_VkShaderModule.h" "Source/RAII/GP2_VkShaderModule.cpp"

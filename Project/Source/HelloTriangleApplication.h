@@ -20,7 +20,7 @@
 #include "RAII/GP2_VkDeviceMemory.h"
 #include "RAII/GP2_VkDescriptorSetLayout.h"
 #include "RAII/GP2_VkDescriptorPool.h"
-#include "GP2_CommandBuffers.h"
+#include "PoolCommandBuffers.h"
 #include "PoolDescriptorSets.h"
 
 // Class Forward Declarations
@@ -110,7 +110,7 @@ private:
 	VkSampler m_TextureSampler; // TODO: RAII
 
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
-	std::unique_ptr<GP2_CommandBuffers> m_pCommandBuffers;
+	std::unique_ptr<PoolCommandBuffers> m_pCommandBuffers;
 
 	std::vector<GP2_VkSemaphore> m_ImageAvailableSemaphores;
 	std::vector<GP2_VkSemaphore> m_RenderFinishedSemaphores;
@@ -181,8 +181,8 @@ private:
 	void CreateCommandPool();
 	void RecordCommandBuffers();
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-	std::unique_ptr<GP2_CommandBuffers> BeginSingleTimeCommands();
-	void EndSingleTimeCommands(std::unique_ptr<GP2_CommandBuffers> pCommandBuffer);
+	std::unique_ptr<PoolCommandBuffers> BeginSingleTimeCommands();
+	void EndSingleTimeCommands(std::unique_ptr<PoolCommandBuffers> pCommandBuffer);
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);

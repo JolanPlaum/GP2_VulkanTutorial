@@ -1,14 +1,14 @@
 //-----------------------------------------------------------------
 // Includes
 //-----------------------------------------------------------------
-#include "GP2_CommandBuffers.h"
+#include "PoolCommandBuffers.h"
 #include <stdexcept>
 
 
 //-----------------------------------------------------------------
 // Constructors
 //-----------------------------------------------------------------
-GP2_CommandBuffers::GP2_CommandBuffers(const VkDevice& device, uint32_t queueFamilyIndex, uint32_t count)
+PoolCommandBuffers::PoolCommandBuffers(const VkDevice& device, uint32_t queueFamilyIndex, uint32_t count)
 	: m_CommandPool{ device, queueFamilyIndex }
 	, m_CommandBuffers{ count }
 {
@@ -28,7 +28,7 @@ GP2_CommandBuffers::GP2_CommandBuffers(const VkDevice& device, uint32_t queueFam
 //-----------------------------------------------------------------
 // Destructor
 //-----------------------------------------------------------------
-std::vector<VkCommandBuffer>& GP2_CommandBuffers::Get()
+std::vector<VkCommandBuffer>& PoolCommandBuffers::Get()
 {
 	return m_CommandBuffers;
 }
