@@ -145,7 +145,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pDevice = nullptr;
 
 	// Destroyed right before instance to allow for debug messages during cleanup
-	if (config::EnableValidationLayers) DestroyDebugUtilsMessengerEXT(m_pInstance->Get(), m_DebugMessenger, nullptr);
+	if (config::EnableValidationLayers) m_pDebugMessenger = nullptr;
 
 	// Instance should be cleaned up last
 	m_pSurface = nullptr;
@@ -388,9 +388,7 @@ void HelloTriangleApplication::SetupDebugMessenger()
 	PopulateDebugMessengerCreateInfo(createInfo);
 
 	// Create extension object
-	if (CreateDebugUtilsMessengerEXT(m_pInstance->Get(), &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS) {
-		throw std::runtime_error("failed to set up debug messenger!");
-	}
+	m_pDebugMessenger = std::make_unique<GP2_VkDebugUtilsMessengerEXT>(m_pInstance->Get(), createInfo);
 }
 void HelloTriangleApplication::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
@@ -412,26 +410,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApplication::DebugCallback(VkDebugUt
 	//  > Only used to test validation layers themselves
 	//  > Should always return VK_FALSE
 	return VK_FALSE;
-}
-VkResult HelloTriangleApplication::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-{
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-
-	// Error if the function couldn't be loaded
-	if (func != nullptr) {
-		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-	}
-	else {
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-void HelloTriangleApplication::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-
-	if (func != nullptr) {
-		func(instance, debugMessenger, pAllocator);
-	}
 }
 
 void HelloTriangleApplication::PickPhysicalDevice()

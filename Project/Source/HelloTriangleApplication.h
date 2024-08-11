@@ -23,6 +23,7 @@
 #include "RAII/GP2_VkDescriptorSetLayout.h"
 #include "RAII/GP2_VkDescriptorPool.h"
 #include "RAII/GP2_VkSampler.h"
+#include "RAII/GP2_VkDebugUtilsMessengerEXT.h"
 #include "PoolCommandBuffers.h"
 #include "PoolDescriptorSets.h"
 
@@ -72,7 +73,7 @@ private:
 	GLFWwindow* m_Window; // TODO: RAII
 
 	std::unique_ptr<GP2_VkInstance> m_pInstance;
-	VkDebugUtilsMessengerEXT m_DebugMessenger; // TODO: RAII
+	std::unique_ptr<GP2_VkDebugUtilsMessengerEXT> m_pDebugMessenger;
 	std::unique_ptr<GP2_VkSurfaceKHR> m_pSurface;
 
 	VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -147,15 +148,6 @@ private:
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
-	static VkResult CreateDebugUtilsMessengerEXT(
-		VkInstance instance,
-		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-		const VkAllocationCallbacks* pAllocator,
-		VkDebugUtilsMessengerEXT* pDebugMessenger);
-	static void DestroyDebugUtilsMessengerEXT(
-		VkInstance instance,
-		VkDebugUtilsMessengerEXT debugMessenger,
-		const VkAllocationCallbacks* pAllocator);
 
 	void PickPhysicalDevice();
 	bool IsDeviceSuitable(VkPhysicalDevice device);
