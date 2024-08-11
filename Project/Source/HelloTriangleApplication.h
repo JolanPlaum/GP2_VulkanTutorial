@@ -21,6 +21,7 @@
 #include "RAII/GP2_VkDeviceMemory.h"
 #include "RAII/GP2_VkDescriptorSetLayout.h"
 #include "RAII/GP2_VkDescriptorPool.h"
+#include "RAII/GP2_VkSampler.h"
 #include "PoolCommandBuffers.h"
 #include "PoolDescriptorSets.h"
 
@@ -108,7 +109,7 @@ private:
 	std::unique_ptr<GP2_VkImage> m_pTextureImage;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
 	std::unique_ptr<GP2_VkImageView> m_pTextureImageView;
-	VkSampler m_TextureSampler; // TODO: RAII
+	std::unique_ptr<GP2_VkSampler> m_pTextureSampler;
 
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<PoolCommandBuffers> m_pCommandBuffers;

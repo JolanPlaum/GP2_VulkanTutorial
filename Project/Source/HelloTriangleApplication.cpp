@@ -122,7 +122,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
 
-	vkDestroySampler(m_pDevice->Get(), m_TextureSampler, nullptr);
+	m_pTextureSampler = nullptr;
 	m_pTextureImageView = nullptr;
 	m_pTextureImageMemory = nullptr;
 	m_pTextureImage = nullptr;
@@ -1444,35 +1444,8 @@ void HelloTriangleApplication::CreateTextureSampler()
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
 
-	// Create info
-	VkSamplerCreateInfo samplerInfo{};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR; // Specifies how to interpolate texels that are oversampled
-	samplerInfo.minFilter = VK_FILTER_LINEAR; // Specifies how to interpolate texels that are undersampled
-
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
-
-	// TODO: match anisotropyEnable with VkPhysicalDeviceFeatures::samperAnisotropy
-	samplerInfo.anisotropyEnable = VK_TRUE; // Disabling will lead to better performance
-	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // A lower value results in better performance
-
-	samplerInfo.compareEnable = VK_FALSE; // Mainly used for shadow maps
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	samplerInfo.unnormalizedCoordinates = VK_FALSE; // Specifies if texel coordinates are within [0, 1] range or [0, texWidth/height] range
-
-	// Create sampler
-	if (vkCreateSampler(m_pDevice->Get(), &samplerInfo, nullptr, &m_TextureSampler) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create texture sampler!");
-	}
+	// Create sampler resource
+	m_pTextureSampler = std::make_unique<GP2_VkSampler>(m_pDevice->Get(), VK_SAMPLER_ADDRESS_MODE_REPEAT, properties.limits.maxSamplerAnisotropy);
 }
 void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
@@ -1635,7 +1608,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = m_pTextureImageView->Get();
-		imageInfo.sampler = m_TextureSampler;
+		imageInfo.sampler = m_pTextureSampler->Get();
 
 		// The configuration of descriptors
 		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
