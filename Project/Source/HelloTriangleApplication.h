@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include "RAII/GP2_GLFWwindow.h"
 #include "RAII/GP2_VkFence.h"
 #include "RAII/GP2_VkSemaphore.h"
 #include "RAII/GP2_VkCommandPool.h"
@@ -70,7 +71,7 @@ public:
 
 private:
 	// Member variables
-	GLFWwindow* m_Window; // TODO: RAII
+	std::unique_ptr<GP2_GLFWwindow> m_pWindow;
 
 	std::unique_ptr<GP2_VkInstance> m_pInstance;
 	std::unique_ptr<GP2_VkDebugUtilsMessengerEXT> m_pDebugMessenger;

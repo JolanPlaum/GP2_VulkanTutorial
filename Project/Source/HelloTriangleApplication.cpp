@@ -57,19 +57,19 @@ void HelloTriangleApplication::InitWindow()
 	// Disable resizing
 	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	// Create the actual window
-	m_Window = glfwCreateWindow(config::WIDTH, config::HEIGHT, "Vulkan", nullptr, nullptr);
-	glfwSetWindowUserPointer(m_Window, this);
+	// Create the window resource
+	m_pWindow = std::make_unique<GP2_GLFWwindow>(config::WIDTH, config::HEIGHT, "Vulkan");
+	glfwSetWindowUserPointer(m_pWindow->Get(), this);
 
 	// Set up an explicit callback to detect resizes
-	glfwSetFramebufferSizeCallback(m_Window, FramebufferResizeCallback);
+	glfwSetFramebufferSizeCallback(m_pWindow->Get(), FramebufferResizeCallback);
 }
 void HelloTriangleApplication::InitVulkan()
 {
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
-	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_pInstance->Get(), m_Window); // can affect physical device selection
+	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_pInstance->Get(), m_pWindow->Get()); // can affect physical device selection
 
 	// Physical and logical device setup
 	PickPhysicalDevice();
@@ -103,7 +103,7 @@ void HelloTriangleApplication::InitVulkan()
 void HelloTriangleApplication::MainLoop()
 {
 	// While the window is still open
-	while (!glfwWindowShouldClose(m_Window))
+	while (!glfwWindowShouldClose(m_pWindow->Get()))
 	{
 		glfwPollEvents();
 		DrawFrame();
@@ -149,7 +149,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pInstance = nullptr;
 
 	// GLFW window
-	glfwDestroyWindow(m_Window);
+	m_pWindow = nullptr;
 }
 
 void HelloTriangleApplication::DrawFrame()
@@ -654,9 +654,9 @@ void HelloTriangleApplication::RecreateSwapChain()
 {
 	// Pause rendering while window is minimized
 	int width = 0, height = 0;
-	glfwGetFramebufferSize(m_Window, &width, &height);
+	glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
 	while (width == 0 || height == 0) {
-		glfwGetFramebufferSize(m_Window, &width, &height);
+		glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
 		glfwWaitEvents();
 	}
 
@@ -760,7 +760,7 @@ VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitie
 
 	// Query window resolution in pixels
 	int width{}, height{};
-	glfwGetFramebufferSize(m_Window, &width, &height);
+	glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
 
 	// Match size against minimum/maximum image extent
 	actualExtent.width = std::clamp(static_cast<uint32_t>(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
