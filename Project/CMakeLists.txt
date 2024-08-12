@@ -38,6 +38,7 @@ file(DOWNLOAD "https://raw.githubusercontent.com/nothings/stb/013ac3beddff3dbffa
 
 
 set(SOURCES
+    "GLFW.h"
     "main.cpp"
     "Utils.h"
     "DataTypes.h"

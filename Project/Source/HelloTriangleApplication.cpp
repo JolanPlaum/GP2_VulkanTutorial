@@ -51,9 +51,6 @@ void HelloTriangleApplication::Run()
 //-----------------------------------------------------------------
 void HelloTriangleApplication::InitWindow()
 {
-	// Should be the very first call
-	glfwInit();
-
 	// Do not create OpenGL context 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -153,7 +150,6 @@ void HelloTriangleApplication::Cleanup()
 
 	// GLFW window
 	glfwDestroyWindow(m_Window);
-	glfwTerminate();
 }
 
 void HelloTriangleApplication::DrawFrame()

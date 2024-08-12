@@ -3,9 +3,11 @@
 #include <cstdlib>
 
 #include "Source/HelloTriangleApplication.h"
+#include "GLFW.h"
 
 int main()
 {
+    GLFW glfwInitialization{};
     HelloTriangleApplication app;
 
     try {
