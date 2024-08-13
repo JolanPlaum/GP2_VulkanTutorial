@@ -1093,7 +1093,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	{
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = m_pRenderPass->Get();
-		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex].Get();
+		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
 
 		// Define where shader loads/stores take place, should match size of attachments for best performance
 		renderPassInfo.renderArea.offset = { 0, 0 };

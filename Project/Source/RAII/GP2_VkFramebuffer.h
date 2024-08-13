@@ -29,7 +29,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkFramebuffer& Get();
+	operator VkFramebuffer() const { return m_Framebuffer; }
+	explicit operator const VkFramebuffer& () const { return m_Framebuffer; }
 
 
 private:
