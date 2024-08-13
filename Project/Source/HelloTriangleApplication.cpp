@@ -82,15 +82,15 @@ void HelloTriangleApplication::InitVulkan()
 	CreateImageViews();
 	CreateFramebuffers();
 
-	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler() });
-	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
+	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(*m_pDevice, std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler() });
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(*m_pDevice, std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
 	CreateGraphicsPipeline();
 
 	CreateVertexBuffer(config::Vertices2);
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
-	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	m_pTextureImageView = std::make_unique<GP2_VkImageView>(*m_pDevice, *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB);
 	CreateTextureSampler();
 
 	CreateDescriptorSets();
@@ -111,7 +111,7 @@ void HelloTriangleApplication::MainLoop()
 	}
 
 	// Wait for operations to finish before exiting
-	vkDeviceWaitIdle(m_pDevice->Get());
+	vkDeviceWaitIdle(*m_pDevice);
 }
 void HelloTriangleApplication::Cleanup()
 {
@@ -156,11 +156,11 @@ void HelloTriangleApplication::Cleanup()
 void HelloTriangleApplication::DrawFrame()
 {
 	// Wait for the previous frame to finish
-	vkWaitForFences(m_pDevice->Get(), 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]), VK_TRUE, UINT64_MAX);
+	vkWaitForFences(*m_pDevice, 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]), VK_TRUE, UINT64_MAX);
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), *m_pSwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(*m_pDevice, *m_pSwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -175,7 +175,7 @@ void HelloTriangleApplication::DrawFrame()
 	}
 
 	// Reset fence if an image was succesfully acquired
-	vkResetFences(m_pDevice->Get(), 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]));
+	vkResetFences(*m_pDevice, 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]));
 
 	// Update model-view-projection matrices
 	UpdateUniformBuffer(m_CurrentFrame);
@@ -554,8 +554,8 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	m_pDevice = std::make_unique<GP2_VkDevice>(m_PhysicalDevice, queueCreateInfos, config::ValidationLayers, config::DeviceExtensions, deviceFeatures);
 
 	// Retrieve queue handle for queue family (index 0 as there's only one right now)
-	vkGetDeviceQueue(m_pDevice->Get(), indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
-	vkGetDeviceQueue(m_pDevice->Get(), indices.PresentFamily.value(), 0, &m_PresentQueue);
+	vkGetDeviceQueue(*m_pDevice, indices.GraphicsFamily.value(), 0, &m_GraphicsQueue);
+	vkGetDeviceQueue(*m_pDevice, indices.PresentFamily.value(), 0, &m_PresentQueue);
 }
 
 void HelloTriangleApplication::CreateSwapChain()
@@ -611,14 +611,14 @@ void HelloTriangleApplication::CreateSwapChain()
 		createInfo.oldSwapchain = VK_NULL_HANDLE; // it's possible the swap chain becomes invalid/unoptimized (e.g. window was resized)
 	}
 
-	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(m_pDevice->Get(), createInfo);
+	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(*m_pDevice, createInfo);
 
 	// Get the final number of images
-	vkGetSwapchainImagesKHR(m_pDevice->Get(), *m_pSwapChain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(*m_pDevice, *m_pSwapChain, &imageCount, nullptr);
 
 	// Allocate an array to hold all the swap chain images
 	m_SwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(m_pDevice->Get(), *m_pSwapChain, &imageCount, m_SwapChainImages.data());
+	vkGetSwapchainImagesKHR(*m_pDevice, *m_pSwapChain, &imageCount, m_SwapChainImages.data());
 
 	// Store the format and extent that was chosen, these will be needed later on
 	m_SwapChainImageFormat = surfaceFormat.format;
@@ -632,7 +632,7 @@ void HelloTriangleApplication::CreateImageViews()
 	// Loop over all the swap chain images
 	for (size_t i{ 0 }; i < m_SwapChainImages.size(); ++i)
 	{
-		m_SwapChainImageViews.push_back({ m_pDevice->Get(), m_SwapChainImages[i], m_SwapChainImageFormat });
+		m_SwapChainImageViews.push_back({ *m_pDevice, m_SwapChainImages[i], m_SwapChainImageFormat });
 	}
 }
 void HelloTriangleApplication::CreateFramebuffers()
@@ -648,7 +648,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		//  layerCount refers to the number of layers inside of each swap chain image
-		m_SwapChainFramebuffers.push_back({ m_pDevice->Get(), *m_pRenderPass, attachments, m_SwapChainExtent, 1 });
+		m_SwapChainFramebuffers.push_back({ *m_pDevice, *m_pRenderPass, attachments, m_SwapChainExtent, 1 });
 	}
 }
 void HelloTriangleApplication::RecreateSwapChain()
@@ -664,7 +664,7 @@ void HelloTriangleApplication::RecreateSwapChain()
 	// Don't touch resources that are still in use
 	// TODO: RecreateSwapChain use oldSwapChain to allow existing swap chain to operate
 	//  while creating a new one (hint: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation#page_Recreating-the-swap-chain )
-	vkDeviceWaitIdle(m_pDevice->Get());
+	vkDeviceWaitIdle(*m_pDevice);
 
 	// Ensure old versions are correctly cleaned up
 	CleanupSwapChain();
@@ -845,7 +845,7 @@ void HelloTriangleApplication::CreateRenderPass(VkFormat format)
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	}
 
-	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(m_pDevice->Get(), std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
+	m_pRenderPass = std::make_unique<GP2_VkRenderPass>(*m_pDevice, std::vector{ colorAttachment }, std::vector{ subpass }, std::vector{ dependency });
 }
 
 VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingUBO()
@@ -876,8 +876,8 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingSampler()
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
-	GP2_VkShaderModule vertShaderModule{ m_pDevice->Get(), "Shaders/shader.vert.spv" };
-	GP2_VkShaderModule fragShaderModule{ m_pDevice->Get(), "Shaders/shader.frag.spv" };
+	GP2_VkShaderModule vertShaderModule{ *m_pDevice, "Shaders/shader.vert.spv" };
+	GP2_VkShaderModule fragShaderModule{ *m_pDevice, "Shaders/shader.frag.spv" };
 
 	// TODO: Shader read up on .pName and .pSpecializationInfo, interesting for custimization of single shader usage
 	// Assign vertex & fragment shader to a specific pipeline stage
@@ -1034,7 +1034,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 
-	m_pGraphicsPipeline = std::make_unique<GP2_VkPipeline>(m_pDevice->Get(), pipelineInfo);
+	m_pGraphicsPipeline = std::make_unique<GP2_VkPipeline>(*m_pDevice, pipelineInfo);
 }
 VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<char>& code)
 {
@@ -1046,7 +1046,7 @@ VkShaderModule HelloTriangleApplication::CreateShaderModule(const std::vector<ch
 
 	// Create shader module using specified data
 	VkShaderModule shaderModule{};
-	if (vkCreateShaderModule(m_pDevice->Get(), &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+	if (vkCreateShaderModule(*m_pDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create shader module!");
 	}
 
@@ -1057,7 +1057,7 @@ void HelloTriangleApplication::CreateCommandPool()
 {
 	// TODO: QueueFamilies find out why we find new queue families indices every time instead of storing the indices
 	m_pCommandBuffers = std::make_unique<PoolCommandBuffers>(
-		m_pDevice->Get(),
+		*m_pDevice,
 		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(),
 		static_cast<uint32_t>(m_SwapChainImages.size()));
 }
@@ -1165,7 +1165,7 @@ std::unique_ptr<PoolCommandBuffers> HelloTriangleApplication::BeginSingleTimeCom
 {
 	// Temporary command buffer
 	auto pCommandBuffer = std::make_unique<PoolCommandBuffers>(
-		m_pDevice->Get(),
+		*m_pDevice,
 		FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), // TODO: use a transfer family queue
 		1
 	);
@@ -1198,32 +1198,32 @@ void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<PoolCommand
 void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory)
 {
 	// Create image resource
-	image = std::move(GP2_VkImage{ m_pDevice->Get(), format, { width, height, 1 } , tiling, usage, false });
+	image = std::move(GP2_VkImage{ *m_pDevice, format, { width, height, 1 } , tiling, usage, false });
 
 	// Create image memory requirements
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(m_pDevice->Get(), image, &memRequirements);
+	vkGetImageMemoryRequirements(*m_pDevice, image, &memRequirements);
 
 	// Allocate image memory resource
-	imageMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
+	imageMemory = std::move(GP2_VkDeviceMemory{ *m_pDevice, memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with image
-	vkBindImageMemory(m_pDevice->Get(), image, imageMemory, 0);
+	vkBindImageMemory(*m_pDevice, image, imageMemory, 0);
 }
 void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
 {
 	// Create buffer resource
-	buffer = std::move(GP2_VkBuffer{ m_pDevice->Get(), size, usage, false });
+	buffer = std::move(GP2_VkBuffer{ *m_pDevice, size, usage, false });
 
 	// Get buffer memory requirements
 	VkMemoryRequirements memRequirements{};
-	vkGetBufferMemoryRequirements(m_pDevice->Get(), buffer, &memRequirements);
+	vkGetBufferMemoryRequirements(*m_pDevice, buffer, &memRequirements);
 
 	// Allocate buffer memory resource
-	bufferMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
+	bufferMemory = std::move(GP2_VkDeviceMemory{ *m_pDevice, memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with buffer
-	vkBindBufferMemory(m_pDevice->Get(), buffer, bufferMemory, 0);
+	vkBindBufferMemory(*m_pDevice, buffer, bufferMemory, 0);
 
 }
 void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
@@ -1320,7 +1320,7 @@ void HelloTriangleApplication::CreateUniformBuffers()
 		*m_pUniformBufferMemory);
 
 	void* data{};
-	vkMapMemory(m_pDevice->Get(), *m_pUniformBufferMemory, 0, bufferSize * bufferCount, 0, &data);
+	vkMapMemory(*m_pDevice, *m_pUniformBufferMemory, 0, bufferSize * bufferCount, 0, &data);
 
 	char* byteData = static_cast<char*>(data);
 	for (size_t i{ 0 }; i < bufferCount; ++i)
@@ -1376,7 +1376,7 @@ void HelloTriangleApplication::CreateTextureSampler()
 	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
 
 	// Create sampler resource
-	m_pTextureSampler = std::make_unique<GP2_VkSampler>(m_pDevice->Get(), VK_SAMPLER_ADDRESS_MODE_REPEAT, properties.limits.maxSamplerAnisotropy);
+	m_pTextureSampler = std::make_unique<GP2_VkSampler>(*m_pDevice, VK_SAMPLER_ADDRESS_MODE_REPEAT, properties.limits.maxSamplerAnisotropy);
 }
 void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
@@ -1463,9 +1463,9 @@ VkDeviceSize HelloTriangleApplication::CreateStagingBuffer(GP2_VkBuffer& staging
 	VkDeviceSize offset{ 0 };
 	for (size_t i{ 0 }; i < datas.size(); ++i)
 	{
-		vkMapMemory(m_pDevice->Get(), stagingBufferMemory, offset, sizes[i], 0, &dstData);
+		vkMapMemory(*m_pDevice, stagingBufferMemory, offset, sizes[i], 0, &dstData);
 		memcpy(dstData, datas[i], sizes[i]);
-		vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory);
+		vkUnmapMemory(*m_pDevice, stagingBufferMemory);
 
 		offset += sizes[i];
 	}
@@ -1550,7 +1550,7 @@ void HelloTriangleApplication::CreateDescriptorSets()
 
 	// Create descriptor pool resource
 	m_pDescriptorSets = std::make_unique<PoolDescriptorSets>(
-		m_pDevice->Get(),
+		*m_pDevice,
 		poolSizes,
 		*m_pDescriptorSetLayout,
 		descriptorSetCount);
@@ -1591,7 +1591,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		descriptorWrites[1].pImageInfo = &imageInfo;
 
 		// Update the configuration of the descriptor(s)
-		vkUpdateDescriptorSets(m_pDevice->Get(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		vkUpdateDescriptorSets(*m_pDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
@@ -1606,11 +1606,11 @@ void HelloTriangleApplication::CreateSyncObjects()
 	for (uint32_t i{}; i < config::MAX_FRAMES_IN_FLIGHT; ++i)
 	{
 		try {
-			m_ImageAvailableSemaphores.push_back({ m_pDevice->Get() });
-			m_RenderFinishedSemaphores.push_back({ m_pDevice->Get() });
+			m_ImageAvailableSemaphores.push_back({ *m_pDevice });
+			m_RenderFinishedSemaphores.push_back({ *m_pDevice });
 
 			// Start fences signaled so the first draw call isn't blocked
-			m_InFlightFences.push_back({ m_pDevice->Get(), true});
+			m_InFlightFences.push_back({ *m_pDevice, true});
 		}
 		catch (const std::exception& e) {
 			throw std::runtime_error("failed to create synchronization objects for a frame!");

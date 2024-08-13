@@ -29,7 +29,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkDevice& Get();
+	operator VkDevice() const { return m_Device; }
+	explicit operator const VkDevice& () const { return m_Device; }
 
 
 private:
