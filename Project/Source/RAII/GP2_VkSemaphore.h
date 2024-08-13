@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkSemaphore& Get();
+	operator VkSemaphore() const { return m_Semaphore; }
+	explicit operator const VkSemaphore& () const { return m_Semaphore; }
 
 
 private:

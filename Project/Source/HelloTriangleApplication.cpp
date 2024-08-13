@@ -160,7 +160,7 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame].Get(), VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -186,9 +186,9 @@ void HelloTriangleApplication::DrawFrame()
 	RecordCommandBuffer(m_pCommandBuffers->Get()[imageIndex], imageIndex);
 
 	// Submit the recorded command buffer to the GPU
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame].Get() };
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // corresponds to semaphore with same index
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame].Get() };
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame] };
 	VkSubmitInfo submitInfo{};
 	{
 		// TODO: SubmitCommands look into linking waitStages to RenderPass stages automatically
