@@ -56,11 +56,6 @@ GP2_VkDebugUtilsMessengerEXT::~GP2_VkDebugUtilsMessengerEXT()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkDebugUtilsMessengerEXT& GP2_VkDebugUtilsMessengerEXT::Get()
-{
-	return m_DebugMessenger;
-}
-
 VkResult GP2_VkDebugUtilsMessengerEXT::vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
