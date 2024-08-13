@@ -27,7 +27,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkSampler& Get();
+	operator VkSampler() const { return m_Sampler; }
+	explicit operator const VkSampler& () const { return m_Sampler; }
 
 
 private:

@@ -1570,7 +1570,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = m_pTextureImageView->Get();
-		imageInfo.sampler = m_pTextureSampler->Get();
+		imageInfo.sampler = *m_pTextureSampler;
 
 		// The configuration of descriptors
 		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
