@@ -644,7 +644,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 	for (size_t i{ 0 }; i < m_SwapChainImageViews.size(); ++i)
 	{
 		// This should be bound to the respective attachment descriptions in the render pass
-		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i].Get() };
+		std::vector<VkImageView> attachments = { m_SwapChainImageViews[i] };
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		//  layerCount refers to the number of layers inside of each swap chain image
@@ -1569,7 +1569,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		// Image info
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_pTextureImageView->Get();
+		imageInfo.imageView = *m_pTextureImageView;
 		imageInfo.sampler = *m_pTextureSampler;
 
 		// The configuration of descriptors

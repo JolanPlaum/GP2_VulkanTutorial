@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkImageView& Get();
+	operator VkImageView() const { return m_ImageView; }
+	explicit operator const VkImageView& () const { return m_ImageView; }
 
 
 private:
