@@ -1109,7 +1109,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	{
 		// Bind graphics pipeline
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pGraphicsPipeline->Get());
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pGraphicsPipeline);
 
 		// TODO: DynamicState make a big automatic switch to check the dynamic states of the given pipeline and set those values
 		// SET DYNAMIC STATES !!!!! this will depend on what was chosen as dynamic state
