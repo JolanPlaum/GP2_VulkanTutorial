@@ -65,10 +65,6 @@ GP2_VkPipelineLayout::~GP2_VkPipelineLayout()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkPipelineLayout& GP2_VkPipelineLayout::Get()
-{
-	return m_PipelineLayout;
-}
 
 
 //-----------------------------------------------------------------

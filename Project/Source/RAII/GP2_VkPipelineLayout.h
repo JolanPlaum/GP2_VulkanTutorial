@@ -25,7 +25,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkPipelineLayout& Get();
+	operator VkPipelineLayout() const { return m_PipelineLayout; }
+	explicit operator const VkPipelineLayout& () const { return m_PipelineLayout; }
 
 
 private:

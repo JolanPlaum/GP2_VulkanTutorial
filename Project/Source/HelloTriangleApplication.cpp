@@ -1028,7 +1028,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.pDepthStencilState = nullptr; // Optional
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = m_pPipelineLayout->Get();
+	pipelineInfo.layout = *m_pPipelineLayout;
 	pipelineInfo.renderPass = m_pRenderPass->Get();
 	pipelineInfo.subpass = 0; // index of the subpass where this pipeline will be used
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
@@ -1133,7 +1133,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
 
 		// Bind the right descriptor set
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pPipelineLayout, 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
 
 		{
 			// Bind vertex buffer
