@@ -90,7 +90,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
-	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB);
+	m_pTextureImageView = std::make_unique<GP2_VkImageView>(m_pDevice->Get(), *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB);
 	CreateTextureSampler();
 
 	CreateDescriptorSets();
@@ -1202,13 +1202,13 @@ void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFo
 
 	// Create image memory requirements
 	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(m_pDevice->Get(), image.Get(), &memRequirements);
+	vkGetImageMemoryRequirements(m_pDevice->Get(), image, &memRequirements);
 
 	// Allocate image memory resource
 	imageMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with image
-	vkBindImageMemory(m_pDevice->Get(), image.Get(), imageMemory.Get(), 0);
+	vkBindImageMemory(m_pDevice->Get(), image, imageMemory.Get(), 0);
 }
 void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
 {
@@ -1362,9 +1362,9 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 
 	// Transfer staging buffer to texture image
 	// TODO: combine operations in a single command buffer instead of waiting for queue to become idle every time
-	TransitionImageLayout(m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	CopyBufferToImage(stagingBuffer.Get(), m_pTextureImage->Get(), static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	TransitionImageLayout(m_pTextureImage->Get(), VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyBufferToImage(stagingBuffer.Get(), *m_pTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Release resources
 	stbi_image_free(pixels);
