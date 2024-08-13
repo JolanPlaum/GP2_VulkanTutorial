@@ -16,6 +16,7 @@
 #include <limits>
 #include <algorithm>
 #include <chrono>
+#include <numeric>
 
 #include "RAII/GP2_VkShaderModule.h"
 
@@ -1230,21 +1231,12 @@ void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& ver
 	// Calculate vertex buffer size
 	VkDeviceSize bufferByteSize{ sizeof(vertices[0]) * vertices.size() };
 
-	// Create staging buffer
+	// Create staging buffer with assigned data
 	GP2_VkBuffer stagingBuffer{};
 	GP2_VkDeviceMemory stagingBufferMemory{};
-	CreateBuffer(
-		bufferByteSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer,
-		stagingBufferMemory);
-
-	// Copy vertices data to staging buffer
-	void* data{};
-	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, bufferByteSize, 0, &data);
-	memcpy(data, vertices.data(), bufferByteSize);
-	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+	CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ bufferByteSize },
+		{ vertices.data() });
 
 	// Create vertex buffer
 	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>();
@@ -1264,21 +1256,12 @@ void HelloTriangleApplication::CreateIndexBuffer(const std::vector<uint16_t>& in
 	// Calculate index buffer size
 	VkDeviceSize bufferByteSize{ sizeof(indices[0]) * indices.size() };
 
-	// Create staging buffer
+	// Create staging buffer with assigned data
 	GP2_VkBuffer stagingBuffer{};
 	GP2_VkDeviceMemory stagingBufferMemory{};
-	CreateBuffer(
-		bufferByteSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer,
-		stagingBufferMemory);
-
-	// Copy indices data to staging buffer
-	void* data{};
-	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, bufferByteSize, 0, &data);
-	memcpy(data, indices.data(), bufferByteSize);
-	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+	CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ bufferByteSize },
+		{ indices.data() });
 
 	// Create index buffer
 	m_pIndexBuffer = std::make_unique<GP2_VkBuffer>();
@@ -1298,28 +1281,14 @@ void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex>
 	// Calculate vertex + index buffer size
 	VkDeviceSize verticesSize{ sizeof(vertices[0]) * vertices.size() };
 	VkDeviceSize indicesSize{ sizeof(indices[0]) * indices.size() };
-	VkDeviceSize bufferSize{ verticesSize + indicesSize };
+	VkDeviceSize bufferSize{};
 
-	// Create staging buffer
+	// Create staging buffer with assigned data
 	GP2_VkBuffer stagingBuffer{};
 	GP2_VkDeviceMemory stagingBufferMemory{};
-	CreateBuffer(
-		bufferSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer,
-		stagingBufferMemory);
-
-	// Copy vertices & indices data to staging buffer
-	void* data{};
-
-	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, verticesSize, 0, &data);
-	memcpy(data, vertices.data(), verticesSize);
-	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
-
-	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), verticesSize, indicesSize, 0, &data);
-	memcpy(data, indices.data(), indicesSize);
-	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+	bufferSize = CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ verticesSize,		indicesSize },
+		{ vertices.data(),	indices.data() });
 
 	// Create vertex index buffer
 	m_pVertexIndexBuffer = std::make_unique<GP2_VkBuffer>();
@@ -1371,21 +1340,12 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 	// Calculate amount of pixels (bytes)
 	VkDeviceSize imageSize = texWidth * texHeight * nrChannels;
 
-	// Create staging buffer
+	// Create staging buffer with assigned data
 	GP2_VkBuffer stagingBuffer{};
 	GP2_VkDeviceMemory stagingBufferMemory{};
-	CreateBuffer(
-		imageSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		stagingBuffer,
-		stagingBufferMemory);
-
-	// Copy vertices data to staging buffer
-	void* data{};
-	vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), 0, imageSize, 0, &data);
-	memcpy(data, pixels, imageSize);
-	vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+	CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ imageSize },
+		{ pixels });
 
 	// Create image
 	m_pTextureImage = std::make_unique<GP2_VkImage>();
@@ -1481,6 +1441,37 @@ void HelloTriangleApplication::TransitionImageLayout(VkImage image, VkFormat for
 
 	// End recording & execute commands
 	EndSingleTimeCommands(std::move(pCommandBuffer));
+}
+VkDeviceSize HelloTriangleApplication::CreateStagingBuffer(GP2_VkBuffer& stagingBuffer, GP2_VkDeviceMemory& stagingBufferMemory, const std::vector<VkDeviceSize>& sizes, const std::vector<const void*>& datas)
+{
+	// Exit early in case of wrong input values
+	if (sizes.size() != datas.size() || sizes.empty()) return 0;
+
+	// Calculate total buffer size
+	VkDeviceSize bufferSize = std::accumulate(sizes.begin(), sizes.end(), static_cast<VkDeviceSize>(0));
+
+	// Create staging buffer
+	CreateBuffer(
+		bufferSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		stagingBuffer,
+		stagingBufferMemory);
+
+	// Copy datas to staging buffer
+	void* dstData{};
+	VkDeviceSize offset{ 0 };
+	for (size_t i{ 0 }; i < datas.size(); ++i)
+	{
+		vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), offset, sizes[i], 0, &dstData);
+		memcpy(dstData, datas[i], sizes[i]);
+		vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+
+		offset += sizes[i];
+	}
+
+	// Return the size of the staging buffer
+	return bufferSize;
 }
 void HelloTriangleApplication::CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
