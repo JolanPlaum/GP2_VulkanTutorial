@@ -1130,14 +1130,14 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		}
 
 		// Bind index buffer
-		vkCmdBindIndexBuffer(commandBuffer, m_pVertexIndexBuffer->Get(), sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
 
 		// Bind the right descriptor set
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pPipelineLayout->Get(), 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
 
 		{
 			// Bind vertex buffer
-			std::vector<VkBuffer> vertexBuffers{ m_pVertexIndexBuffer->Get() };
+			std::vector<VkBuffer> vertexBuffers{ *m_pVertexIndexBuffer };
 			std::vector<VkDeviceSize> offsets{ 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
 
@@ -1146,7 +1146,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		}
 		{
 			// Bind vertex buffer
-			std::vector<VkBuffer> vertexBuffers{ m_pVertexBuffer->Get() };
+			std::vector<VkBuffer> vertexBuffers{ *m_pVertexBuffer };
 			std::vector<VkDeviceSize> offsets{ 0 };
 			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
 
@@ -1217,13 +1217,13 @@ void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlag
 
 	// Get buffer memory requirements
 	VkMemoryRequirements memRequirements{};
-	vkGetBufferMemoryRequirements(m_pDevice->Get(), buffer.Get(), &memRequirements);
+	vkGetBufferMemoryRequirements(m_pDevice->Get(), buffer, &memRequirements);
 
 	// Allocate buffer memory resource
 	bufferMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with buffer
-	vkBindBufferMemory(m_pDevice->Get(), buffer.Get(), bufferMemory, 0);
+	vkBindBufferMemory(m_pDevice->Get(), buffer, bufferMemory, 0);
 
 }
 void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
@@ -1249,7 +1249,7 @@ void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& ver
 		*m_pVertexBufferMemory);
 
 	// Transfer staging buffer to vertex buffer
-	CopyBuffer(stagingBuffer.Get(), m_pVertexBuffer->Get(), bufferByteSize);
+	CopyBuffer(stagingBuffer, *m_pVertexBuffer, bufferByteSize);
 }
 void HelloTriangleApplication::CreateIndexBuffer(const std::vector<uint16_t>& indices)
 {
@@ -1274,7 +1274,7 @@ void HelloTriangleApplication::CreateIndexBuffer(const std::vector<uint16_t>& in
 		*m_pIndexBufferMemory);
 
 	// Transfer staging buffer to index buffer
-	CopyBuffer(stagingBuffer.Get(), m_pIndexBuffer->Get(), bufferByteSize);
+	CopyBuffer(stagingBuffer, *m_pIndexBuffer, bufferByteSize);
 }
 void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
 {
@@ -1301,7 +1301,7 @@ void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex>
 		*m_pVertexIndexBufferMemory);
 
 	// Transfer staging buffer to vertex index buffer
-	CopyBuffer(stagingBuffer.Get(), m_pVertexIndexBuffer->Get(), bufferSize);
+	CopyBuffer(stagingBuffer, *m_pVertexIndexBuffer, bufferSize);
 }
 void HelloTriangleApplication::CreateUniformBuffers()
 {
@@ -1363,7 +1363,7 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 	// Transfer staging buffer to texture image
 	// TODO: combine operations in a single command buffer instead of waiting for queue to become idle every time
 	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	CopyBufferToImage(stagingBuffer.Get(), *m_pTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	CopyBufferToImage(stagingBuffer, *m_pTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Release resources
@@ -1562,7 +1562,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 	{
 		// Descriptors that refer to buffers are configured with a VkDescriptorBufferInfo struct
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = m_pUniformBuffer->Get();
+		bufferInfo.buffer = *m_pUniformBuffer;
 		bufferInfo.range = sizeof(UniformBufferObject);
 		bufferInfo.offset = bufferInfo.range * i;
 

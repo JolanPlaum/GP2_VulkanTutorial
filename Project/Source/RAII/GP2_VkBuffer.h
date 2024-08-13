@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkBuffer& Get();
+	operator VkBuffer() const { return m_Buffer; }
+	explicit operator const VkBuffer& () const { return m_Buffer; }
 
 
 private:
