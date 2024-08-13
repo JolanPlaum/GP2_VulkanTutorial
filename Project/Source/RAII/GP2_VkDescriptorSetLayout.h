@@ -25,7 +25,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkDescriptorSetLayout& Get();
+	operator VkDescriptorSetLayout() const { return m_DescriptorSetLayout; }
+	explicit operator const VkDescriptorSetLayout& () const { return m_DescriptorSetLayout; }
 
 
 private:

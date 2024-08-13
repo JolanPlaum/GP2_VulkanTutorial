@@ -62,10 +62,6 @@ GP2_VkDescriptorSetLayout::~GP2_VkDescriptorSetLayout()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkDescriptorSetLayout& GP2_VkDescriptorSetLayout::Get()
-{
-	return m_DescriptorSetLayout;
-}
 
 
 //-----------------------------------------------------------------

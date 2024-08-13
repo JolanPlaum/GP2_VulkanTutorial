@@ -83,7 +83,7 @@ void HelloTriangleApplication::InitVulkan()
 	CreateFramebuffers();
 
 	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(m_pDevice->Get(), std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler() });
-	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector{ m_pDescriptorSetLayout->Get()});
+	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(m_pDevice->Get(), std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
 	CreateGraphicsPipeline();
 
 	CreateVertexBuffer(config::Vertices2);
@@ -1552,7 +1552,7 @@ void HelloTriangleApplication::CreateDescriptorSets()
 	m_pDescriptorSets = std::make_unique<PoolDescriptorSets>(
 		m_pDevice->Get(),
 		poolSizes,
-		m_pDescriptorSetLayout->Get(),
+		*m_pDescriptorSetLayout,
 		descriptorSetCount);
 }
 void HelloTriangleApplication::UpdateDescriptorSets()
