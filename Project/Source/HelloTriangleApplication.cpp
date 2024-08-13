@@ -648,7 +648,7 @@ void HelloTriangleApplication::CreateFramebuffers()
 
 		// TODO: FrameBuffer get rid of magic numbers and pass values through function parameters
 		//  layerCount refers to the number of layers inside of each swap chain image
-		m_SwapChainFramebuffers.push_back({ m_pDevice->Get(), m_pRenderPass->Get(), attachments, m_SwapChainExtent, 1 });
+		m_SwapChainFramebuffers.push_back({ m_pDevice->Get(), *m_pRenderPass, attachments, m_SwapChainExtent, 1 });
 	}
 }
 void HelloTriangleApplication::RecreateSwapChain()
@@ -1029,7 +1029,7 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = *m_pPipelineLayout;
-	pipelineInfo.renderPass = m_pRenderPass->Get();
+	pipelineInfo.renderPass = *m_pRenderPass;
 	pipelineInfo.subpass = 0; // index of the subpass where this pipeline will be used
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
 	pipelineInfo.basePipelineIndex = -1; // Optional // needs VK_PIPELINE_CREATE_DERIVATIVE_BIT flag
@@ -1092,7 +1092,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 	VkRenderPassBeginInfo renderPassInfo{};
 	{
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = m_pRenderPass->Get();
+		renderPassInfo.renderPass = *m_pRenderPass;
 		renderPassInfo.framebuffer = m_SwapChainFramebuffers[imageIndex];
 
 		// Define where shader loads/stores take place, should match size of attachments for best performance

@@ -28,7 +28,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkRenderPass& Get();
+	operator VkRenderPass() const { return m_RenderPass; }
+	explicit operator const VkRenderPass& () const { return m_RenderPass; }
 
 
 private:
