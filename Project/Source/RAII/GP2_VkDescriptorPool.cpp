@@ -63,10 +63,6 @@ GP2_VkDescriptorPool::~GP2_VkDescriptorPool()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkDescriptorPool& GP2_VkDescriptorPool::Get()
-{
-	return m_VkDescriptorPool;
-}
 
 
 //-----------------------------------------------------------------

@@ -25,7 +25,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkDescriptorPool& Get();
+	operator VkDescriptorPool() const { return m_VkDescriptorPool; }
+	explicit operator const VkDescriptorPool& () const { return m_VkDescriptorPool; }
 
 
 private:
