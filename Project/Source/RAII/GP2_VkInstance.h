@@ -26,7 +26,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkInstance& Get();
+	operator VkInstance() const { return m_Instance; }
+	explicit operator const VkInstance& () const { return m_Instance; }
 
 
 private:

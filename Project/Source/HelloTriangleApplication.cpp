@@ -70,7 +70,7 @@ void HelloTriangleApplication::InitVulkan()
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
-	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(m_pInstance->Get(), m_pWindow->Get()); // can affect physical device selection
+	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(*m_pInstance, m_pWindow->Get()); // can affect physical device selection
 
 	// Physical and logical device setup
 	PickPhysicalDevice();
@@ -385,7 +385,7 @@ void HelloTriangleApplication::SetupDebugMessenger()
 	PopulateDebugMessengerCreateInfo(createInfo);
 
 	// Create extension object
-	m_pDebugMessenger = std::make_unique<GP2_VkDebugUtilsMessengerEXT>(m_pInstance->Get(), createInfo);
+	m_pDebugMessenger = std::make_unique<GP2_VkDebugUtilsMessengerEXT>(*m_pInstance, createInfo);
 }
 void HelloTriangleApplication::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
@@ -413,7 +413,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 {
 	// Get the number of graphics cards available
 	uint32_t deviceCount{ 0 };
-	vkEnumeratePhysicalDevices(m_pInstance->Get(), &deviceCount, nullptr);
+	vkEnumeratePhysicalDevices(*m_pInstance, &deviceCount, nullptr);
 
 	// Exit early if there are 0 devices with Vulkan support
 	if (deviceCount == 0) {
@@ -422,7 +422,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 
 	// Allocate an array to hold all the device handles
 	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(m_pInstance->Get(), &deviceCount, devices.data());
+	vkEnumeratePhysicalDevices(*m_pInstance, &deviceCount, devices.data());
 
 	// TODO: PhysicalDevice go for the best option instead of the first one that works
 	// Evaluate each device and check if they are suitable
