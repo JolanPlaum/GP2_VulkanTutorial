@@ -25,7 +25,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkSurfaceKHR& Get();
+	operator VkSurfaceKHR() const { return m_Surface; }
+	explicit operator const VkSurfaceKHR& () const { return m_Surface; }
 
 
 private:

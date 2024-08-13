@@ -76,7 +76,7 @@ void HelloTriangleApplication::InitVulkan()
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 
-	CreateRenderPass(ChooseSwapSurfaceFormat(QuerySwapChainSupport(m_PhysicalDevice, m_pSurface->Get()).Formats).format);
+	CreateRenderPass(ChooseSwapSurfaceFormat(QuerySwapChainSupport(m_PhysicalDevice, *m_pSurface).Formats).format);
 
 	CreateSwapChain();
 	CreateImageViews();
@@ -456,7 +456,7 @@ bool HelloTriangleApplication::IsDeviceSuitable(VkPhysicalDevice device)
 
 	bool swapChainAdequate = false;
 	if (extensionsSupported) {
-		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device, m_pSurface->Get());
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device, *m_pSurface);
 		swapChainAdequate = !swapChainSupport.Formats.empty() && !swapChainSupport.PresentModes.empty();
 	}
 
@@ -484,7 +484,7 @@ QueueFamilyIndices HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice 
 		}
 
 		VkBool32 presentSupport{ false };
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_pSurface->Get(), &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, *m_pSurface, &presentSupport);
 		if (presentSupport) {
 			indices.PresentFamily = i;
 		}
@@ -561,7 +561,7 @@ void HelloTriangleApplication::CreateLogicalDevice()
 void HelloTriangleApplication::CreateSwapChain()
 {
 	// Get swap chain details for chosen physical device
-	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice, m_pSurface->Get());
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice, *m_pSurface);
 
 	// Choose the right settings for the swap chain
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
@@ -579,7 +579,7 @@ void HelloTriangleApplication::CreateSwapChain()
 	VkSwapchainCreateInfoKHR createInfo{};
 	{
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = m_pSurface->Get();
+		createInfo.surface = *m_pSurface;
 
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
