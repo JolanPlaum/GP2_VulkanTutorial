@@ -66,10 +66,6 @@ GP2_VkShaderModule::~GP2_VkShaderModule()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkShaderModule& GP2_VkShaderModule::Get()
-{
-	return m_ShaderModule;
-}
 
 
 //-----------------------------------------------------------------

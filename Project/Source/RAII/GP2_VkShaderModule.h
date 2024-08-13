@@ -25,7 +25,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkShaderModule& Get();
+	operator VkShaderModule() const { return m_ShaderModule; }
+	explicit operator const VkShaderModule& () const { return m_ShaderModule; }
 
 
 private:
