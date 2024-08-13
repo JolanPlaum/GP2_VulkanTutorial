@@ -156,7 +156,7 @@ void HelloTriangleApplication::Cleanup()
 void HelloTriangleApplication::DrawFrame()
 {
 	// Wait for the previous frame to finish
-	vkWaitForFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get(), VK_TRUE, UINT64_MAX);
+	vkWaitForFences(m_pDevice->Get(), 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]), VK_TRUE, UINT64_MAX);
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
@@ -175,7 +175,7 @@ void HelloTriangleApplication::DrawFrame()
 	}
 
 	// Reset fence if an image was succesfully acquired
-	vkResetFences(m_pDevice->Get(), 1, &m_InFlightFences[m_CurrentFrame].Get());
+	vkResetFences(m_pDevice->Get(), 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]));
 
 	// Update model-view-projection matrices
 	UpdateUniformBuffer(m_CurrentFrame);
@@ -205,7 +205,7 @@ void HelloTriangleApplication::DrawFrame()
 		submitInfo.pSignalSemaphores = signalSemaphores;
 	}
 
-	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame].Get()) != VK_SUCCESS) {
+	if (vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 

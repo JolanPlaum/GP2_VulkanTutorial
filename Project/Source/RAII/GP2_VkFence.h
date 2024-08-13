@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkFence& Get();
+	operator VkFence() const { return m_Fence; }
+	explicit operator const VkFence&() const { return m_Fence; }
 
 
 private:
