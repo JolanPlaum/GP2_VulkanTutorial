@@ -1208,7 +1208,7 @@ void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFo
 	imageMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with image
-	vkBindImageMemory(m_pDevice->Get(), image, imageMemory.Get(), 0);
+	vkBindImageMemory(m_pDevice->Get(), image, imageMemory, 0);
 }
 void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory)
 {
@@ -1223,7 +1223,7 @@ void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlag
 	bufferMemory = std::move(GP2_VkDeviceMemory{ m_pDevice->Get(), memRequirements.size, FindMemoryType(memRequirements.memoryTypeBits, properties) });
 
 	// Associate memory with buffer
-	vkBindBufferMemory(m_pDevice->Get(), buffer.Get(), bufferMemory.Get(), 0);
+	vkBindBufferMemory(m_pDevice->Get(), buffer.Get(), bufferMemory, 0);
 
 }
 void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
@@ -1320,7 +1320,7 @@ void HelloTriangleApplication::CreateUniformBuffers()
 		*m_pUniformBufferMemory);
 
 	void* data{};
-	vkMapMemory(m_pDevice->Get(), m_pUniformBufferMemory->Get(), 0, bufferSize * bufferCount, 0, &data);
+	vkMapMemory(m_pDevice->Get(), *m_pUniformBufferMemory, 0, bufferSize * bufferCount, 0, &data);
 
 	char* byteData = static_cast<char*>(data);
 	for (size_t i{ 0 }; i < bufferCount; ++i)
@@ -1463,9 +1463,9 @@ VkDeviceSize HelloTriangleApplication::CreateStagingBuffer(GP2_VkBuffer& staging
 	VkDeviceSize offset{ 0 };
 	for (size_t i{ 0 }; i < datas.size(); ++i)
 	{
-		vkMapMemory(m_pDevice->Get(), stagingBufferMemory.Get(), offset, sizes[i], 0, &dstData);
+		vkMapMemory(m_pDevice->Get(), stagingBufferMemory, offset, sizes[i], 0, &dstData);
 		memcpy(dstData, datas[i], sizes[i]);
-		vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory.Get());
+		vkUnmapMemory(m_pDevice->Get(), stagingBufferMemory);
 
 		offset += sizes[i];
 	}

@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkDeviceMemory& Get();
+	operator VkDeviceMemory() const { return m_Memory; }
+	explicit operator const VkDeviceMemory& () const { return m_Memory; }
 
 
 private:
