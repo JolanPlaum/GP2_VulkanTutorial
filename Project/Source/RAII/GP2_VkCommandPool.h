@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkCommandPool& Get();
+	operator VkCommandPool() const { return m_CommandPool; }
+	explicit operator const VkCommandPool& () const { return m_CommandPool; }
 
 
 private:
