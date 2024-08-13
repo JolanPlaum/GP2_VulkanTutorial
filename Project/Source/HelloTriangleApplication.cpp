@@ -160,7 +160,7 @@ void HelloTriangleApplication::DrawFrame()
 
 	// Acquire an image from the swap chain
 	uint32_t imageIndex{};
-	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), m_pSwapChain->Get(), UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult result = vkAcquireNextImageKHR(m_pDevice->Get(), *m_pSwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_IsFramebufferResized = false;
 		RecreateSwapChain();
@@ -217,7 +217,7 @@ void HelloTriangleApplication::DrawFrame()
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { m_pSwapChain->Get() };
+		VkSwapchainKHR swapChains[] = { *m_pSwapChain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex; // image for each swap chain in pSwapchains
@@ -614,11 +614,11 @@ void HelloTriangleApplication::CreateSwapChain()
 	m_pSwapChain = std::make_unique<GP2_VkSwapchainKHR>(m_pDevice->Get(), createInfo);
 
 	// Get the final number of images
-	vkGetSwapchainImagesKHR(m_pDevice->Get(), m_pSwapChain->Get(), &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(m_pDevice->Get(), *m_pSwapChain, &imageCount, nullptr);
 
 	// Allocate an array to hold all the swap chain images
 	m_SwapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(m_pDevice->Get(), m_pSwapChain->Get(), &imageCount, m_SwapChainImages.data());
+	vkGetSwapchainImagesKHR(m_pDevice->Get(), *m_pSwapChain, &imageCount, m_SwapChainImages.data());
 
 	// Store the format and extent that was chosen, these will be needed later on
 	m_SwapChainImageFormat = surfaceFormat.format;

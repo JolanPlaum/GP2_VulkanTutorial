@@ -56,10 +56,6 @@ GP2_VkSwapchainKHR::~GP2_VkSwapchainKHR()
 //-----------------------------------------------------------------
 // Public Member Functions
 //-----------------------------------------------------------------
-VkSwapchainKHR& GP2_VkSwapchainKHR::Get()
-{
-	return m_SwapchainKHR;
-}
 
 
 //-----------------------------------------------------------------

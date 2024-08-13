@@ -24,7 +24,8 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	VkSwapchainKHR& Get();
+	operator VkSwapchainKHR() const { return m_SwapchainKHR; }
+	explicit operator const VkSwapchainKHR& () const { return m_SwapchainKHR; }
 
 
 private:
