@@ -24,7 +24,7 @@ public:
 	//---------------------------
 	// Public Member Functions
 	//---------------------------
-	GLFWwindow* Get();
+	explicit operator GLFWwindow*() const { return m_pWindow; }
 
 
 private:

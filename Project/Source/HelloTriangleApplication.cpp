@@ -60,17 +60,17 @@ void HelloTriangleApplication::InitWindow()
 
 	// Create the window resource
 	m_pWindow = std::make_unique<GP2_GLFWwindow>(config::WIDTH, config::HEIGHT, "Vulkan");
-	glfwSetWindowUserPointer(m_pWindow->Get(), this);
+	glfwSetWindowUserPointer(static_cast<GLFWwindow*>(*m_pWindow), this);
 
 	// Set up an explicit callback to detect resizes
-	glfwSetFramebufferSizeCallback(m_pWindow->Get(), FramebufferResizeCallback);
+	glfwSetFramebufferSizeCallback(static_cast<GLFWwindow*>(*m_pWindow), FramebufferResizeCallback);
 }
 void HelloTriangleApplication::InitVulkan()
 {
 	// Instance should be created first
 	CreateInstance();
 	SetupDebugMessenger();
-	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(*m_pInstance, m_pWindow->Get()); // can affect physical device selection
+	m_pSurface = std::make_unique<GP2_VkSurfaceKHR>(*m_pInstance, static_cast<GLFWwindow*>(*m_pWindow)); // can affect physical device selection
 
 	// Physical and logical device setup
 	PickPhysicalDevice();
@@ -104,7 +104,7 @@ void HelloTriangleApplication::InitVulkan()
 void HelloTriangleApplication::MainLoop()
 {
 	// While the window is still open
-	while (!glfwWindowShouldClose(m_pWindow->Get()))
+	while (!glfwWindowShouldClose(static_cast<GLFWwindow*>(*m_pWindow)))
 	{
 		glfwPollEvents();
 		DrawFrame();
@@ -655,9 +655,9 @@ void HelloTriangleApplication::RecreateSwapChain()
 {
 	// Pause rendering while window is minimized
 	int width = 0, height = 0;
-	glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
+	glfwGetFramebufferSize(static_cast<GLFWwindow*>(*m_pWindow), &width, &height);
 	while (width == 0 || height == 0) {
-		glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
+		glfwGetFramebufferSize(static_cast<GLFWwindow*>(*m_pWindow), &width, &height);
 		glfwWaitEvents();
 	}
 
@@ -761,7 +761,7 @@ VkExtent2D HelloTriangleApplication::ChooseSwapExtent(const VkSurfaceCapabilitie
 
 	// Query window resolution in pixels
 	int width{}, height{};
-	glfwGetFramebufferSize(m_pWindow->Get(), &width, &height);
+	glfwGetFramebufferSize(static_cast<GLFWwindow*>(*m_pWindow), &width, &height);
 
 	// Match size against minimum/maximum image extent
 	actualExtent.width = std::clamp(static_cast<uint32_t>(width), capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
