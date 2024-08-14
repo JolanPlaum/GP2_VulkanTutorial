@@ -30,7 +30,6 @@
 
 // Class Forward Declarations
 struct GLFWwindow;
-struct Vertex2D;
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> GraphicsFamily;
@@ -182,9 +181,9 @@ private:
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
-	void CreateVertexBuffer(const std::vector<Vertex2D>& vertices);
-	void CreateIndexBuffer(const std::vector<uint16_t>& indices);
-	void CreateVertexIndexBuffer(const std::vector<Vertex2D>& vertices, const std::vector<uint16_t>& indices);
+	template <typename VertexType> void CreateVertexBuffer(const std::vector<VertexType>& vertices);
+	template <typename IndexType> void CreateIndexBuffer(const std::vector<IndexType>& indices);
+	template <typename VertexType, typename IndexType> void CreateVertexIndexBuffer(const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices);
 	void CreateUniformBuffers();
 	void CreateTextureImage(const char* filePath, int nrChannels);
 	void CreateTextureSampler();
@@ -200,4 +199,88 @@ private:
 	void CreateSyncObjects();
 	void DestroySyncObjects();
 };
+
+//---------------------------
+// Template Member Functions
+//---------------------------
+template<typename VertexType>
+inline void HelloTriangleApplication::CreateVertexBuffer(const std::vector<VertexType>& vertices)
+{
+	// Calculate vertex buffer size
+	VkDeviceSize bufferByteSize{ sizeof(vertices[0]) * vertices.size() };
+
+	// Create staging buffer with assigned data
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ bufferByteSize },
+		{ vertices.data() });
+
+	// Create vertex buffer
+	m_pVertexBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pVertexBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		*m_pVertexBuffer,
+		*m_pVertexBufferMemory);
+
+	// Transfer staging buffer to vertex buffer
+	CopyBuffer(stagingBuffer, *m_pVertexBuffer, bufferByteSize);
+}
+template<typename IndexType>
+inline void HelloTriangleApplication::CreateIndexBuffer(const std::vector<IndexType>& indices)
+{
+	// Calculate index buffer size
+	VkDeviceSize bufferByteSize{ sizeof(indices[0]) * indices.size() };
+
+	// Create staging buffer with assigned data
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ bufferByteSize },
+		{ indices.data() });
+
+	// Create index buffer
+	m_pIndexBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pIndexBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateBuffer(
+		bufferByteSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		*m_pIndexBuffer,
+		*m_pIndexBufferMemory);
+
+	// Transfer staging buffer to index buffer
+	CopyBuffer(stagingBuffer, *m_pIndexBuffer, bufferByteSize);
+}
+template<typename VertexType, typename IndexType>
+inline void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices)
+{
+	// Calculate vertex + index buffer size
+	VkDeviceSize verticesSize{ sizeof(vertices[0]) * vertices.size() };
+	VkDeviceSize indicesSize{ sizeof(indices[0]) * indices.size() };
+	VkDeviceSize bufferSize{};
+
+	// Create staging buffer with assigned data
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	bufferSize = CreateStagingBuffer(stagingBuffer, stagingBufferMemory,
+		{ verticesSize,		indicesSize },
+		{ vertices.data(),	indices.data() });
+
+	// Create vertex index buffer
+	m_pVertexIndexBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pVertexIndexBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	CreateBuffer(
+		bufferSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		*m_pVertexIndexBuffer,
+		*m_pVertexIndexBufferMemory);
+
+	// Transfer staging buffer to vertex index buffer
+	CopyBuffer(stagingBuffer, *m_pVertexIndexBuffer, bufferSize);
+}
 #endif
