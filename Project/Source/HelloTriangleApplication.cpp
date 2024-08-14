@@ -901,9 +901,9 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	};
 
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions{
-		Vertex::GetBindingDescription()
+		Vertex2D::GetBindingDescription()
 	};
-	auto vertexAttributeDescriptionsArray = Vertex::GetAttributeDescriptions();
+	auto vertexAttributeDescriptionsArray = Vertex2D::GetAttributeDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{
 		vertexAttributeDescriptionsArray.begin(),
 		vertexAttributeDescriptionsArray.end()
@@ -1226,7 +1226,7 @@ void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlag
 	vkBindBufferMemory(*m_pDevice, buffer, bufferMemory, 0);
 
 }
-void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex>& vertices)
+void HelloTriangleApplication::CreateVertexBuffer(const std::vector<Vertex2D>& vertices)
 {
 	// Calculate vertex buffer size
 	VkDeviceSize bufferByteSize{ sizeof(vertices[0]) * vertices.size() };
@@ -1276,7 +1276,7 @@ void HelloTriangleApplication::CreateIndexBuffer(const std::vector<uint16_t>& in
 	// Transfer staging buffer to index buffer
 	CopyBuffer(stagingBuffer, *m_pIndexBuffer, bufferByteSize);
 }
-void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
+void HelloTriangleApplication::CreateVertexIndexBuffer(const std::vector<Vertex2D>& vertices, const std::vector<uint16_t>& indices)
 {
 	// Calculate vertex + index buffer size
 	VkDeviceSize verticesSize{ sizeof(vertices[0]) * vertices.size() };

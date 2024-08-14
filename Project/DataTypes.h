@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <array>
 
-struct Vertex
+struct Vertex2D
 {
 	glm::vec2 pos{ 0.f, 0.f };
 	glm::vec3 color{ 0.f, 0.f, 0.f };
@@ -13,7 +13,7 @@ struct Vertex
     static constexpr VkVertexInputBindingDescription GetBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0; // Index of the binding in the array of bindings
-        bindingDescription.stride = sizeof(Vertex); // Specifies number of bytes between entries
+        bindingDescription.stride = sizeof(Vertex2D); // Specifies number of bytes between entries
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; // Move to next data entry after vertex/intance
         return bindingDescription;
     }
@@ -24,17 +24,17 @@ struct Vertex
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
         attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+        attributeDescriptions[0].offset = offsetof(Vertex2D, pos);
 
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location = 1;
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
+        attributeDescriptions[1].offset = offsetof(Vertex2D, color);
 
         attributeDescriptions[2].binding = 0;
         attributeDescriptions[2].location = 2;
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+        attributeDescriptions[2].offset = offsetof(Vertex2D, texCoord);
 
         return attributeDescriptions;
     }

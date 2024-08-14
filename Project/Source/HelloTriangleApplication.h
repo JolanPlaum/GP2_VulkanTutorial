@@ -30,7 +30,7 @@
 
 // Class Forward Declarations
 struct GLFWwindow;
-struct Vertex;
+struct Vertex2D;
 struct QueueFamilyIndices
 {
 	std::optional<uint32_t> GraphicsFamily;
@@ -182,9 +182,9 @@ private:
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);
-	void CreateVertexBuffer(const std::vector<Vertex>& vertices);
+	void CreateVertexBuffer(const std::vector<Vertex2D>& vertices);
 	void CreateIndexBuffer(const std::vector<uint16_t>& indices);
-	void CreateVertexIndexBuffer(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+	void CreateVertexIndexBuffer(const std::vector<Vertex2D>& vertices, const std::vector<uint16_t>& indices);
 	void CreateUniformBuffers();
 	void CreateTextureImage(const char* filePath, int nrChannels);
 	void CreateTextureSampler();

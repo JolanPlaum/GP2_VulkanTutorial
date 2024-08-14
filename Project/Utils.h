@@ -21,14 +21,14 @@ namespace config
 	const bool EnableValidationLayers = true;
 #endif
 
-	const std::vector<Vertex> Vertices{
+	const std::vector<Vertex2D> Vertices{
 		{ {-1.5f,-0.5f }, { 1.0f, 0.0f, 0.0f}, { 0.0f, 1.0f } },
 		{ {-0.5f,-0.5f }, { 0.0f, 1.0f, 0.0f}, { 1.0f, 1.0f } },
 		{ {-0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f } },
 		{ {-1.5f, 0.5f }, { 1.0f, 1.0f, 1.0f}, { 0.0f, 0.0f } },
 	};
 
-	const std::vector<Vertex> Vertices2{
+	const std::vector<Vertex2D> Vertices2{
 		{ { 0.5f,-0.5f }, { 1.0f, 0.0f, 1.0f}, {-1.0f, 2.0f } },
 		{ { 1.5f,-0.5f }, { 1.0f, 1.0f, 0.0f}, { 2.0f, 2.0f } },
 		{ { 1.5f, 0.5f }, { 0.0f, 1.0f, 1.0f}, { 2.0f,-1.0f } },
