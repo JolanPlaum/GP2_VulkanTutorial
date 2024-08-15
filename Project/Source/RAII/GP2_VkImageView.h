@@ -12,7 +12,7 @@ class GP2_VkImageView final
 public:
 	// Constructors and Destructor
 	GP2_VkImageView() = default;
-	GP2_VkImageView(const VkDevice& device, const VkImage& image, const VkFormat& format);
+	GP2_VkImageView(const VkDevice& device, const VkImage& image, const VkFormat& format, const VkImageAspectFlags& aspectFlags);
 	~GP2_VkImageView();
 	
 	// Copy and Move semantics

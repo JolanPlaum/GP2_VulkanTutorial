@@ -21,21 +21,31 @@ namespace config
 	const bool EnableValidationLayers = true;
 #endif
 
-	const std::vector<Vertex2D> Vertices{
-		{ {-1.5f,-0.5f }, { 1.0f, 0.0f, 0.0f}, { 0.0f, 1.0f } },
-		{ {-0.5f,-0.5f }, { 0.0f, 1.0f, 0.0f}, { 1.0f, 1.0f } },
-		{ {-0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f } },
-		{ {-1.5f, 0.5f }, { 1.0f, 1.0f, 1.0f}, { 0.0f, 0.0f } },
+	const float MODEL_OFFSET_X = 0.0f;
+	const std::vector<Vertex3D> Vertices{
+		// Standard square with an offset on the X axis
+		{ {MODEL_OFFSET_X+ -0.5f,-0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f}, { 0.0f, 1.0f } },
+		{ {MODEL_OFFSET_X+  0.5f,-0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f}, { 1.0f, 1.0f } },
+		{ {MODEL_OFFSET_X+  0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f } },
+		{ {MODEL_OFFSET_X+ -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f}, { 0.0f, 0.0f } },
+
+		// Duplicate just below the standard square
+		{ {MODEL_OFFSET_X+ -0.5f,-0.5f,-0.5f }, { 1.0f, 0.0f, 0.0f}, { 0.0f, 1.0f } },
+		{ {MODEL_OFFSET_X+  0.5f,-0.5f,-0.5f }, { 0.0f, 1.0f, 0.0f}, { 1.0f, 1.0f } },
+		{ {MODEL_OFFSET_X+  0.5f, 0.5f,-0.5f }, { 0.0f, 0.0f, 1.0f}, { 1.0f, 0.0f } },
+		{ {MODEL_OFFSET_X+ -0.5f, 0.5f,-0.5f }, { 1.0f, 1.0f, 1.0f}, { 0.0f, 0.0f } }
 	};
 
-	const std::vector<Vertex2D> Vertices2{
-		{ { 0.5f,-0.5f }, { 1.0f, 0.0f, 1.0f}, {-1.0f, 2.0f } },
-		{ { 1.5f,-0.5f }, { 1.0f, 1.0f, 0.0f}, { 2.0f, 2.0f } },
-		{ { 1.5f, 0.5f }, { 0.0f, 1.0f, 1.0f}, { 2.0f,-1.0f } },
-		{ { 0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f}, {-1.0f,-1.0f } }
+	const std::vector<Vertex3D> Vertices2{
+		{ { 0.5f,-0.5f, 0.0f }, { 1.0f, 0.0f, 1.0f}, {-1.0f, 2.0f } },
+		{ { 1.5f,-0.5f, 0.0f }, { 1.0f, 1.0f, 0.0f}, { 2.0f, 2.0f } },
+		{ { 1.5f, 0.5f, 0.0f }, { 0.0f, 1.0f, 1.0f}, { 2.0f,-1.0f } },
+		{ { 0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f}, {-1.0f,-1.0f } }
 	};
+
 	const std::vector<uint16_t> Indices{
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4,
 	};
 }
 

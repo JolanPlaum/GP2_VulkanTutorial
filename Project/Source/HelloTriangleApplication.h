@@ -89,6 +89,9 @@ private:
 	VkExtent2D m_SwapChainExtent;
 	std::vector<GP2_VkImageView> m_SwapChainImageViews;
 	std::vector<GP2_VkFramebuffer> m_SwapChainFramebuffers;
+	std::unique_ptr<GP2_VkImage> m_pDepthImage;
+	std::unique_ptr<GP2_VkDeviceMemory> m_pDepthImageMemory;
+	std::unique_ptr<GP2_VkImageView> m_pDepthImageView;
 
 	std::unique_ptr<GP2_VkDescriptorSetLayout> m_pDescriptorSetLayout;
 	std::unique_ptr<GP2_VkPipelineLayout> m_pPipelineLayout;
@@ -185,6 +188,7 @@ private:
 	template <typename IndexType> void CreateIndexBuffer(const std::vector<IndexType>& indices);
 	template <typename VertexType, typename IndexType> void CreateVertexIndexBuffer(const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices);
 	void CreateUniformBuffers();
+	void CreateDepthResources();
 	void CreateTextureImage(const char* filePath, int nrChannels);
 	void CreateTextureSampler();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -192,6 +196,9 @@ private:
 	void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void CopyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	VkFormat FindDepthFormat();
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	bool HasStencilComponent(VkFormat format);
 
 	void CreateDescriptorSets();
 	void UpdateDescriptorSets();
