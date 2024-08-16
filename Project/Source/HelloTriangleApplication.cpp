@@ -161,7 +161,6 @@ void HelloTriangleApplication::DrawFrame()
 	uint32_t imageIndex{};
 	VkResult result = vkAcquireNextImageKHR(*m_pDevice, *m_pSwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		m_IsFramebufferResized = false;
 		RecreateSwapChain();
 		std::cout << "VK_ERROR_OUT_OF_DATE_KHR\n";
 		return; // TODO: RecreateSwapChain don't quit drawing a frame (look inside function for more info)
@@ -227,7 +226,6 @@ void HelloTriangleApplication::DrawFrame()
 
 	result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_IsFramebufferResized) {
-		m_IsFramebufferResized = false;
 		RecreateSwapChain();
 	}
 	else if (result != VK_SUCCESS) {
@@ -655,6 +653,8 @@ void HelloTriangleApplication::CreateFramebuffers()
 }
 void HelloTriangleApplication::RecreateSwapChain()
 {
+	m_IsFramebufferResized = false;
+
 	// Pause rendering while window is minimized
 	int width = 0, height = 0;
 	glfwGetFramebufferSize(static_cast<GLFWwindow*>(*m_pWindow), &width, &height);
