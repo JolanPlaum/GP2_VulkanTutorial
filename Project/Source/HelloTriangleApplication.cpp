@@ -91,7 +91,6 @@ void HelloTriangleApplication::InitVulkan()
 	CreateVertexIndexBuffer(config::Vertices, config::Indices);
 	CreateUniformBuffers();
 	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
-	m_pTextureImageView = std::make_unique<GP2_VkImageView>(*m_pDevice, *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 	CreateTextureSampler();
 
 	CreateDescriptorSets();
@@ -1348,6 +1347,9 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	CopyBufferToImage(stagingBuffer, *m_pTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	// Create image view
+	m_pTextureImageView = std::make_unique<GP2_VkImageView>(*m_pDevice, *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 
 	// Release resources
 	stbi_image_free(pixels);
