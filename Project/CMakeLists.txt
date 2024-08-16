@@ -75,4 +75,4 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${GLSL_SOURCE_FILES})
 add_dependencies(${PROJECT_NAME} Shaders Resources)
 # Link libraries
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SAVE_FILES_DIR})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES} glfw tinyobjloader)

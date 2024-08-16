@@ -17,6 +17,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(glfw)
 
+FetchContent_Declare(
+  tinyobjloader
+  GIT_REPOSITORY https://github.com/tinyobjloader/tinyobjloader.git
+  GIT_TAG        v2.0-rc1 # Specify the version you need
+)
+
+FetchContent_MakeAvailable(tinyobjloader)
+
 # Find the required packages
 find_package(Vulkan REQUIRED)
 
