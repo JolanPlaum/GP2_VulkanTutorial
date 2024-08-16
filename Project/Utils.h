@@ -13,6 +13,9 @@ namespace config
 
 	const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
+	const std::string VERTEX_SHADER_PATH = "Resources/Shaders/shader.vert.spv";
+	const std::string FRAGMENT_SHADER_PATH = "Resources/Shaders/shader.frag.spv";
+
 	const std::vector<const char*> DeviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	const std::vector<const char*> ValidationLayers{ "VK_LAYER_KHRONOS_validation" };
 #ifdef NDEBUG
