@@ -905,8 +905,8 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingSampler()
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
 	// Create shader modules locally (should be destroyed right after pipeline creation)
-	GP2_VkShaderModule vertShaderModule{ *m_pDevice, "Shaders/shader.vert.spv" };
-	GP2_VkShaderModule fragShaderModule{ *m_pDevice, "Shaders/shader.frag.spv" };
+	GP2_VkShaderModule vertShaderModule{ *m_pDevice, "Resources/Shaders/shader.vert.spv" };
+	GP2_VkShaderModule fragShaderModule{ *m_pDevice, "Resources/Shaders/shader.frag.spv" };
 
 	// TODO: Shader read up on .pName and .pSpecializationInfo, interesting for custimization of single shader usage
 	// Assign vertex & fragment shader to a specific pipeline stage

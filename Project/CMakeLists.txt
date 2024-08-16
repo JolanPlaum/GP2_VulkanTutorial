@@ -1,12 +1,21 @@
 # Source files
-set(SHADER_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Shaders")
-set(SHADER_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/Shaders")
 set(RESOURCE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 set(RESOURCE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/Resources")
+set(SHADER_SOURCE_DIR "${RESOURCE_SOURCE_DIR}/Shaders")
+set(SHADER_BINARY_DIR "${RESOURCE_BINARY_DIR}/Shaders")
 
 file(GLOB_RECURSE GLSL_SOURCE_FILES
     "${SHADER_SOURCE_DIR}/*.frag"
     "${SHADER_SOURCE_DIR}/*.vert"
+)
+
+add_custom_target(
+    Resources
+)
+add_custom_command(
+    TARGET Resources
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${RESOURCE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_SOURCE_DIR} ${RESOURCE_BINARY_DIR}
 )
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
@@ -23,15 +32,6 @@ endforeach(GLSL)
 add_custom_target(
     Shaders
     DEPENDS ${SPIRV_BINARY_FILES}
-)
-
-add_custom_target(
-    Resources
-)
-add_custom_command(
-    TARGET Resources
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${RESOURCE_BINARY_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_SOURCE_DIR} ${RESOURCE_BINARY_DIR}
 )
 
 file(DOWNLOAD "https://raw.githubusercontent.com/nothings/stb/013ac3beddff3dbffafd5177e7972067cd2b5083/stb_image.h" "${SAVE_FILES_DIR}/stb_image.h")
