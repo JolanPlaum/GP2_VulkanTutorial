@@ -674,6 +674,7 @@ void HelloTriangleApplication::RecreateSwapChain()
 	// Create swap chain and all of the objects that depend on it
 	CreateSwapChain();
 	CreateImageViews();
+	CreateDepthResources();
 	CreateFramebuffers();
 
 	if (m_SwapChainImages.size() != m_pCommandBuffers->Get().size()) {
