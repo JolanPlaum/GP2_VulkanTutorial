@@ -111,15 +111,15 @@ private:
 	std::unique_ptr<GP2_VkDeviceMemory> m_pIndexBufferMemory;
 	std::unique_ptr<GP2_VkBuffer> m_pVertexIndexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexIndexBufferMemory;
-	std::unique_ptr<GP2_VkBuffer> m_pUniformBuffer;
-	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory;
-	std::vector<void*> m_MappedUniformBuffers;
 
-	std::unique_ptr<GP2_VkImage> m_pTextureImage;
-	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory;
-	std::unique_ptr<GP2_VkImageView> m_pTextureImageView;
-	std::unique_ptr<GP2_VkSampler> m_pTextureSampler;
+	std::unique_ptr<GP2_VkImage> m_pTextureImage; // Only used in CreateTextureImage
+	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory; // Only used in CreateTextureImage
+	std::unique_ptr<GP2_VkImageView> m_pTextureImageView; // Created in CreateTextureImage & referenced in UpdateDescriptorSets
+	std::unique_ptr<GP2_VkSampler> m_pTextureSampler; // Created in CreateTextureSampler & referenced in UpdateDescriptorSets
 
+	std::unique_ptr<GP2_VkBuffer> m_pUniformBuffer; // Created in CreateUniformBuffers & referenced in UpdateDescriptorSets
+	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory; // Only used in CreateUniformBuffers
+	std::vector<void*> m_MappedUniformBuffers; // Created in CreateUniformBuffers & assigned in UpdateUniformBuffer
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<PoolCommandBuffers> m_pCommandBuffers;
 

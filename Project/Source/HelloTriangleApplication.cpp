@@ -93,10 +93,10 @@ void HelloTriangleApplication::InitVulkan()
 
 	LoadModel(config::MODEL_PATH.c_str());
 	CreateVertexIndexBuffer(m_ModelVertices, m_ModelIndices);
-	CreateUniformBuffers();
 	CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha);
 	CreateTextureSampler();
 
+	CreateUniformBuffers();
 	CreateDescriptorSets();
 	UpdateDescriptorSets();
 
@@ -123,14 +123,14 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
+	m_pUniformBufferMemory = nullptr;
+	m_pUniformBuffer = nullptr;
 
 	m_pTextureSampler = nullptr;
 	m_pTextureImageView = nullptr;
 	m_pTextureImageMemory = nullptr;
 	m_pTextureImage = nullptr;
 
-	m_pUniformBufferMemory = nullptr;
-	m_pUniformBuffer = nullptr;
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
 
@@ -179,12 +179,7 @@ void HelloTriangleApplication::DrawFrame()
 	vkResetFences(*m_pDevice, 1, &static_cast<const VkFence&>(m_InFlightFences[m_CurrentFrame]));
 
 	// Update model-view-projection matrices
-	UpdateUniformBuffer(m_CurrentFrame);
-
-	// Record a command buffer which draws the scene onto the acquired image
-	// Needed to update descriptor set data (model-view-projection UBO data)
-	vkResetCommandBuffer(m_pCommandBuffers->Get()[imageIndex], 0);
-	RecordCommandBuffer(m_pCommandBuffers->Get()[imageIndex], imageIndex);
+	UpdateUniformBuffer(imageIndex);
 
 	// Submit the recorded command buffer to the GPU
 	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame] };
@@ -671,6 +666,9 @@ void HelloTriangleApplication::RecreateSwapChain()
 	//  while creating a new one (hint: https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation#page_Recreating-the-swap-chain )
 	vkDeviceWaitIdle(*m_pDevice);
 
+	// Store the old amount of swap chain images
+	auto oldSwapChainSize = m_SwapChainImages.size();
+
 	// Ensure old versions are correctly cleaned up
 	CleanupSwapChain();
 
@@ -680,7 +678,12 @@ void HelloTriangleApplication::RecreateSwapChain()
 	CreateDepthResources();
 	CreateFramebuffers();
 
-	if (m_SwapChainImages.size() != m_pCommandBuffers->Get().size()) {
+	// Update data that depends on the amount of images in the swap chain
+	if (m_SwapChainImages.size() != oldSwapChainSize) {
+		CreateUniformBuffers();
+		CreateDescriptorSets();
+		UpdateDescriptorSets();
+
 		CreateCommandPool();
 	}
 	RecordCommandBuffers();
@@ -1181,7 +1184,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(m_ModelVertices[0]) * m_ModelVertices.size(), VK_INDEX_TYPE_UINT32);
 
 		// Bind the right descriptor set
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pPipelineLayout, 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pPipelineLayout, 0, 1, &m_pDescriptorSets->Get()[imageIndex], 0, nullptr);
 
 		{
 			// Bind vertex buffer
@@ -1326,7 +1329,7 @@ void HelloTriangleApplication::CreateBuffer(VkDeviceSize size, VkBufferUsageFlag
 void HelloTriangleApplication::CreateUniformBuffers()
 {
 	VkDeviceSize bufferSize{ sizeof(UniformBufferObject) };
-	size_t bufferCount{ config::MAX_FRAMES_IN_FLIGHT };
+	size_t bufferCount{ m_SwapChainImages.size() };
 
 	m_pUniformBuffer = std::make_unique<GP2_VkBuffer>();
 	m_pUniformBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
@@ -1642,7 +1645,7 @@ bool HelloTriangleApplication::HasStencilComponent(VkFormat format)
 
 void HelloTriangleApplication::CreateDescriptorSets()
 {
-	uint32_t descriptorSetCount{ config::MAX_FRAMES_IN_FLIGHT };
+	uint32_t descriptorSetCount = static_cast<uint32_t>(m_SwapChainImages.size());
 
 	// Describes which descriptor type(s) are used and how many of each type
 	std::vector<VkDescriptorPoolSize> poolSizes{
