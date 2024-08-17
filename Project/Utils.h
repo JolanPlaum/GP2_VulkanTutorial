@@ -16,6 +16,9 @@ namespace config
 	const std::string VERTEX_SHADER_PATH = "Resources/Shaders/shader.vert.spv";
 	const std::string FRAGMENT_SHADER_PATH = "Resources/Shaders/shader.frag.spv";
 
+	const std::string MODEL_PATH = "Resources/Models/viking_room.obj";
+	const std::string TEXTURE_PATH = "Resources/Textures/viking_room.png";
+
 	const std::vector<const char*> DeviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	const std::vector<const char*> ValidationLayers{ "VK_LAYER_KHRONOS_validation" };
 #ifdef NDEBUG

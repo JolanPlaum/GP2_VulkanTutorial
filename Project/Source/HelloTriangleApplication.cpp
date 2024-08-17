@@ -6,6 +6,8 @@
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 #include "Utils.h"
 #include "DataTypes.h"
 #include <stdexcept>
@@ -17,6 +19,7 @@
 #include <algorithm>
 #include <chrono>
 #include <numeric>
+#include <unordered_map>
 
 #include "RAII/GP2_VkShaderModule.h"
 
@@ -88,9 +91,10 @@ void HelloTriangleApplication::InitVulkan()
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(*m_pDevice, std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
 	CreateGraphicsPipeline();
 
-	CreateVertexIndexBuffer(config::Vertices, config::Indices);
+	LoadModel(config::MODEL_PATH.c_str());
+	CreateVertexIndexBuffer(m_ModelVertices, m_ModelIndices);
 	CreateUniformBuffers();
-	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha);
+	CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha);
 	CreateTextureSampler();
 
 	CreateDescriptorSets();
@@ -1174,7 +1178,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		}
 
 		// Bind index buffer
-		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(config::Vertices[0]) * config::Vertices.size(), VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(m_ModelVertices[0]) * m_ModelVertices.size(), VK_INDEX_TYPE_UINT32);
 
 		// Bind the right descriptor set
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pPipelineLayout, 0, 1, &m_pDescriptorSets->Get()[m_CurrentFrame], 0, nullptr);
@@ -1186,7 +1190,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
 
 			// TODO: CmdDraw get rid of magic numbers
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(config::Indices.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_ModelIndices.size()), 1, 0, 0, 0);
 		}
 	}
 	vkCmdEndRenderPass(commandBuffer);
@@ -1228,6 +1232,64 @@ void HelloTriangleApplication::EndSingleTimeCommands(std::unique_ptr<PoolCommand
 
 	vkQueueSubmit(m_GraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(m_GraphicsQueue);
+}
+
+void HelloTriangleApplication::LoadModel(const char* filePath)
+{
+	tinyobj::attrib_t attrib{};
+	std::vector<tinyobj::shape_t> shapes{};
+	std::vector<tinyobj::material_t> materials{};
+	std::string warn{}, err{};
+
+	// Load in the data (will triangulate by default)
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filePath)) {
+		throw std::runtime_error(warn + err);
+	}
+
+	// TODO: LoadModel make temporary glm::vec vectors for attrib.vertices and attrib.texcoords
+	uint32_t oldAmountOfVertices{ 0 };
+	std::unordered_map<Vertex3D, uint32_t> uniqueVertices{};
+
+	// Loop over all the OBJ shapes
+	for (const tinyobj::shape_t& shape : shapes)
+	{
+		std::cout << "\tindices: " << shape.mesh.indices.size() << std::endl;
+		std::cout << "\tnum_face_vertices: " << shape.mesh.num_face_vertices.size() << std::endl;
+		// TODO: LoadModel OBJ keep num_face_vertices in account when looping over faces
+		// Loop over all the faces
+		for (const tinyobj::index_t& index : shape.mesh.indices)
+		{
+			// Retrieve vertex data
+			Vertex3D vertex{};
+			vertex.pos = {
+				attrib.vertices[3 * index.vertex_index + 0],
+				attrib.vertices[3 * index.vertex_index + 1],
+				attrib.vertices[3 * index.vertex_index + 2]
+			};
+			vertex.texCoord = {
+				attrib.texcoords[2 * index.texcoord_index + 0],
+				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+			};
+			vertex.color = { 1.0f, 1.0f, 1.0f };
+
+			// Add vertex with index if it doesn't exist yet
+			if (uniqueVertices.count(vertex) == 0) {
+				uniqueVertices[vertex] = static_cast<uint32_t>(m_ModelVertices.size());
+				m_ModelVertices.push_back(vertex);
+			}
+
+			// Add index data to the list
+			m_ModelIndices.push_back(uniqueVertices[vertex]);
+			++oldAmountOfVertices;
+		}
+	}
+
+	std::cout << "\tOld amount: " << oldAmountOfVertices << std::endl;
+	std::cout << "\tVertices amount: " << m_ModelVertices.size() << std::endl;
+	std::cout << "\tIndices amount: " << m_ModelIndices.size() << std::endl;
+
+	std::cout << "\n\tOld size: " << sizeof(m_ModelVertices[0]) * oldAmountOfVertices << std::endl;
+	std::cout << "\tNew size: " << sizeof(m_ModelVertices[0]) * m_ModelVertices.size() << std::endl;
 }
 
 void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory)

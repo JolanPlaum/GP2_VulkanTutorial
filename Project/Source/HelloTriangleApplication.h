@@ -5,6 +5,7 @@
 #include <vector>
 #include <optional>
 #include <memory>
+#include "DataTypes.h"
 #include "RAII/GP2_GLFWwindow.h"
 #include "RAII/GP2_VkFence.h"
 #include "RAII/GP2_VkSemaphore.h"
@@ -101,6 +102,9 @@ private:
 	// TODO: create a vertexindex buffer per mesh object
 	// TODO: store offset for vertex and index in the buffer
 	// TODO: make a single DeviceMemory for all the meshes
+	std::vector<Vertex3D> m_ModelVertices;
+	std::vector<uint32_t> m_ModelIndices;
+
 	std::unique_ptr<GP2_VkBuffer> m_pVertexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexBufferMemory;
 	std::unique_ptr<GP2_VkBuffer> m_pIndexBuffer;
@@ -181,6 +185,8 @@ private:
 	void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	std::unique_ptr<PoolCommandBuffers> BeginSingleTimeCommands();
 	void EndSingleTimeCommands(std::unique_ptr<PoolCommandBuffers> pCommandBuffer);
+
+	void LoadModel(const char* filePath);
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);

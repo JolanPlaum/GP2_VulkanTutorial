@@ -2,6 +2,8 @@
 #define GP2VKT_DATATYPES_H_
 #include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 #include <array>
 
 struct Vertex2D
@@ -9,6 +11,8 @@ struct Vertex2D
 	glm::vec2 pos{ 0.f, 0.f };
 	glm::vec3 color{ 0.f, 0.f, 0.f };
     glm::vec2 texCoord{ 0.f, 0.f };
+
+    bool operator==(const Vertex2D&) const = default;
 
     static constexpr VkVertexInputBindingDescription GetBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -38,12 +42,22 @@ struct Vertex2D
         return attributeDescriptions;
     }
 };
+template<> struct std::hash<Vertex2D>
+{
+   size_t operator()(Vertex2D const& vertex) const {
+       return ((std::hash<glm::vec2>()(vertex.pos)
+           ^ (std::hash<glm::vec3>()(vertex.color) << 1)) >> 1)
+           ^ (std::hash<glm::vec2>()(vertex.texCoord) << 1);
+   }
+};
 
 struct Vertex3D
 {
 	glm::vec3 pos{ 0.f, 0.f, 0.f };
 	glm::vec3 color{ 0.f, 0.f, 0.f };
     glm::vec2 texCoord{ 0.f, 0.f };
+
+    bool operator==(const Vertex3D&) const = default;
 
     static constexpr VkVertexInputBindingDescription GetBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -71,6 +85,14 @@ struct Vertex3D
         attributeDescriptions[2].offset = offsetof(Vertex3D, texCoord);
 
         return attributeDescriptions;
+    }
+};
+template<> struct std::hash<Vertex3D>
+{
+    size_t operator()(Vertex3D const& vertex) const {
+        return ((std::hash<glm::vec3>()(vertex.pos) ^
+            (std::hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+            (std::hash<glm::vec2>()(vertex.texCoord) << 1);
     }
 };
 
