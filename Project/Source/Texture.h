@@ -29,8 +29,8 @@ public:
 	// Copy and Move semantics
 	Texture(const Texture& other)					= delete;
 	Texture& operator=(const Texture& other)		= delete;
-	Texture(Texture&& other) noexcept				= delete;
-	Texture& operator=(Texture&& other) noexcept	= delete;
+	Texture(Texture&& other) noexcept				= default;
+	Texture& operator=(Texture&& other) noexcept	= default;
 
 	//---------------------------
 	// Public Member Functions

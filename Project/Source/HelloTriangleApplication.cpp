@@ -93,13 +93,13 @@ void HelloTriangleApplication::InitVulkan()
 
 	LoadModel(config::MODEL_PATH.c_str());
 	CreateVertexIndexBuffer(m_ModelVertices, m_ModelIndices);
-	CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha, m_pTexture);
-	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha, m_pTextureTest);
+	m_Textures.push_back(CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha));
+	m_Textures.push_back(CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha));
 	CreateTextureSampler();
 
 	CreateUniformBuffers();
 	CreateDescriptorSets();
-	UpdateDescriptorSets();
+	UpdateDescriptorSets(m_Textures);
 
 	CreateCommandPool();
 	RecordCommandBuffers();
@@ -128,8 +128,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pUniformBuffer = nullptr;
 
 	m_pTextureSampler = nullptr;
-	m_pTextureTest = nullptr;
-	m_pTexture = nullptr;
+	m_Textures.clear();
 
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
@@ -682,7 +681,7 @@ void HelloTriangleApplication::RecreateSwapChain()
 	if (m_SwapChainImages.size() != oldSwapChainSize) {
 		CreateUniformBuffers();
 		CreateDescriptorSets();
-		UpdateDescriptorSets();
+		UpdateDescriptorSets(m_Textures);
 
 		CreateCommandPool();
 	}
@@ -902,7 +901,7 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingSampler()
 	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 1;
 	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorCount = 2;
 	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	samplerLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
@@ -1422,6 +1421,12 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 	// Release resources
 	stbi_image_free(pixels);
 }
+Texture HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrChannels)
+{
+	Texture tempText{};
+	CreateTextureImage(filePath, nrChannels, tempText);
+	return std::move(tempText);
+}
 void HelloTriangleApplication::CreateTextureSampler()
 {
 	// Physical device properties
@@ -1650,10 +1655,11 @@ void HelloTriangleApplication::CreateDescriptorSets()
 {
 	uint32_t descriptorSetCount = static_cast<uint32_t>(m_SwapChainImages.size());
 
+	// TODO: don't use magic numbers for DescriptorPoolSize but link it to DescriptorSetLayout
 	// Describes which descriptor type(s) are used and how many of each type
 	std::vector<VkDescriptorPoolSize> poolSizes{
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 * descriptorSetCount },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 * descriptorSetCount }
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * descriptorSetCount }
 	};
 
 	// Create descriptor pool resource
@@ -1663,7 +1669,7 @@ void HelloTriangleApplication::CreateDescriptorSets()
 		*m_pDescriptorSetLayout,
 		descriptorSetCount);
 }
-void HelloTriangleApplication::UpdateDescriptorSets()
+void HelloTriangleApplication::UpdateDescriptorSets(const std::vector<Texture>& textures)
 {
 	// Populate every descriptor set
 	for (size_t i{}; i < m_pDescriptorSets->Get().size(); ++i)
@@ -1675,10 +1681,13 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		bufferInfo.offset = bufferInfo.range * i;
 
 		// Image info
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = m_pTexture->ImageView;
-		imageInfo.sampler = *m_pTextureSampler;
+		std::vector<VkDescriptorImageInfo> imageInfos{ textures.size() };
+		for (size_t i{ 0 }; i < imageInfos.size(); ++i)
+		{
+			imageInfos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfos[i].imageView = m_Textures[i].ImageView;
+			imageInfos[i].sampler = *m_pTextureSampler;
+		}
 
 		// The configuration of descriptors
 		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
@@ -1695,8 +1704,8 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		descriptorWrites[1].dstBinding = 1; // Binding index
 		descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
-		descriptorWrites[1].pImageInfo = &imageInfo;
+		descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size()); // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+		descriptorWrites[1].pImageInfo = imageInfos.data();
 
 		// Update the configuration of the descriptor(s)
 		vkUpdateDescriptorSets(*m_pDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
