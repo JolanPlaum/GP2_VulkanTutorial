@@ -46,6 +46,7 @@ set(SOURCES
 
     "Source/PoolCommandBuffers.h" "Source/PoolCommandBuffers.cpp"
     "Source/PoolDescriptorSets.h" "Source/PoolDescriptorSets.cpp"
+    "Source/Texture.h" "Source/Texture.cpp"
 
     "Source/RAII/GP2_GLFWwindow.h" "Source/RAII/GP2_GLFWwindow.cpp"
     "Source/RAII/GP2_VkPipeline.h" "Source/RAII/GP2_VkPipeline.cpp"

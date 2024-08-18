@@ -28,6 +28,7 @@
 #include "RAII/GP2_VkDebugUtilsMessengerEXT.h"
 #include "PoolCommandBuffers.h"
 #include "PoolDescriptorSets.h"
+#include "Texture.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -112,9 +113,8 @@ private:
 	std::unique_ptr<GP2_VkBuffer> m_pVertexIndexBuffer;
 	std::unique_ptr<GP2_VkDeviceMemory> m_pVertexIndexBufferMemory;
 
-	std::unique_ptr<GP2_VkImage> m_pTextureImage; // Only used in CreateTextureImage
-	std::unique_ptr<GP2_VkDeviceMemory> m_pTextureImageMemory; // Only used in CreateTextureImage
-	std::unique_ptr<GP2_VkImageView> m_pTextureImageView; // Created in CreateTextureImage & referenced in UpdateDescriptorSets
+	std::unique_ptr<Texture> m_pTexture; // Created in CreateTextureImage & referenced in UpdateDescriptorSets
+	std::unique_ptr<Texture> m_pTextureTest; // Created in CreateTextureImage & referenced in UpdateDescriptorSets
 	std::unique_ptr<GP2_VkSampler> m_pTextureSampler; // Created in CreateTextureSampler & referenced in UpdateDescriptorSets
 
 	std::unique_ptr<GP2_VkBuffer> m_pUniformBuffer; // Created in CreateUniformBuffers & referenced in UpdateDescriptorSets
@@ -195,7 +195,8 @@ private:
 	template <typename VertexType, typename IndexType> void CreateVertexIndexBuffer(const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices);
 	void CreateUniformBuffers();
 	void CreateDepthResources();
-	void CreateTextureImage(const char* filePath, int nrChannels);
+	void CreateTextureImage(const char* filePath, int nrChannels, std::unique_ptr<Texture>& pTexture);
+	void CreateTextureImage(const char* filePath, int nrChannels, Texture& texture);
 	void CreateTextureSampler();
 	void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	VkDeviceSize CreateStagingBuffer(GP2_VkBuffer& stagingBuffer, GP2_VkDeviceMemory& stagingBufferMemory, const std::vector<VkDeviceSize>& sizes, const std::vector<const void*>& datas);

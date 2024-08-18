@@ -93,7 +93,8 @@ void HelloTriangleApplication::InitVulkan()
 
 	LoadModel(config::MODEL_PATH.c_str());
 	CreateVertexIndexBuffer(m_ModelVertices, m_ModelIndices);
-	CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha);
+	CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha, m_pTexture);
+	CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha, m_pTextureTest);
 	CreateTextureSampler();
 
 	CreateUniformBuffers();
@@ -127,9 +128,8 @@ void HelloTriangleApplication::Cleanup()
 	m_pUniformBuffer = nullptr;
 
 	m_pTextureSampler = nullptr;
-	m_pTextureImageView = nullptr;
-	m_pTextureImageMemory = nullptr;
-	m_pTextureImage = nullptr;
+	m_pTextureTest = nullptr;
+	m_pTexture = nullptr;
 
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
@@ -1375,7 +1375,12 @@ void HelloTriangleApplication::CreateDepthResources()
 	// Completely optional as the render pass will take care of this transition
 	TransitionImageLayout(*m_pDepthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
-void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrChannels)
+void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrChannels, std::unique_ptr<Texture>& pTexture)
+{
+	pTexture = std::make_unique<Texture>();
+	CreateTextureImage(filePath, nrChannels, *pTexture);
+}
+void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrChannels, Texture& texture)
 {
 	// Load image from the given file path
 	int texWidth, texHeight, texChannels;
@@ -1395,8 +1400,6 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 		{ pixels });
 
 	// Create image
-	m_pTextureImage = std::make_unique<GP2_VkImage>();
-	m_pTextureImageMemory = std::make_unique<GP2_VkDeviceMemory>();
 	CreateImage(
 		texWidth,
 		texHeight,
@@ -1404,17 +1407,17 @@ void HelloTriangleApplication::CreateTextureImage(const char* filePath, int nrCh
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		*m_pTextureImage,
-		*m_pTextureImageMemory);
+		texture.Image,
+		texture.ImageMemory);
 
 	// Transfer staging buffer to texture image
 	// TODO: combine operations in a single command buffer instead of waiting for queue to become idle every time
-	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	CopyBufferToImage(stagingBuffer, *m_pTextureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-	TransitionImageLayout(*m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	TransitionImageLayout(texture.Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	CopyBufferToImage(stagingBuffer, texture.Image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	TransitionImageLayout(texture.Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	// Create image view
-	m_pTextureImageView = std::make_unique<GP2_VkImageView>(*m_pDevice, *m_pTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+	texture.ImageView = std::move(GP2_VkImageView{ *m_pDevice, texture.Image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT });
 
 	// Release resources
 	stbi_image_free(pixels);
@@ -1674,7 +1677,7 @@ void HelloTriangleApplication::UpdateDescriptorSets()
 		// Image info
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = *m_pTextureImageView;
+		imageInfo.imageView = m_pTexture->ImageView;
 		imageInfo.sampler = *m_pTextureSampler;
 
 		// The configuration of descriptors
