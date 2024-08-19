@@ -65,10 +65,12 @@ private:
 	void UpdateDescriptorSets(VkDescriptorSet descriptorSet, VkSampler sampler) const;
 	void CmdBindings(VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkDescriptorSet descriptorSet) const;
 
-	void CreateVertexIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, std::unique_ptr<GP2_SingleTimeCommand> commandBuffer, const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& indices);
+	template<typename VertexType, typename IndexType>
+	void CreateVertexIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, std::unique_ptr<GP2_SingleTimeCommand> commandBuffer, const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices);
 
 	// Init static helper functions
 	void LoadModel(const char* filePath, std::vector<Vertex3D>& vertices, std::vector<uint32_t>& indices);
+	void LoadModel(const char* filePath, std::vector<VertexPBR>& vertices, std::vector<uint32_t>& indices);
 
 	uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
@@ -76,4 +78,37 @@ private:
 	void CopyBuffer(std::unique_ptr<GP2_SingleTimeCommand> commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 };
+
+template<typename VertexType, typename IndexType>
+inline void Mesh::CreateVertexIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, std::unique_ptr<GP2_SingleTimeCommand> commandBuffer, const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices)
+{
+	// Calculate vertex + index buffer size
+	VkDeviceSize verticesSize{ sizeof(vertices[0]) * vertices.size() };
+	VkDeviceSize indicesSize{ sizeof(indices[0]) * indices.size() };
+	VkDeviceSize bufferSize{};
+
+	// Create staging buffer with assigned data
+	GP2_VkBuffer stagingBuffer{};
+	GP2_VkDeviceMemory stagingBufferMemory{};
+	bufferSize = CreateStagingBuffer(
+		physicalDevice, device,
+		stagingBuffer, stagingBufferMemory,
+		{ verticesSize,		indicesSize },
+		{ vertices.data(),	indices.data() });
+
+	// Create vertex index buffer
+	CreateBuffer(
+		physicalDevice, device,
+		m_VertexIndexBuffer, m_VertexIndexBufferMemory,
+		bufferSize,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	// Transfer staging buffer to vertex index buffer
+	CopyBuffer(std::move(commandBuffer), stagingBuffer, m_VertexIndexBuffer, bufferSize);
+
+	// Set index count & offset
+	m_IndexCount = static_cast<uint32_t>(indices.size());
+	m_IndexOffset = verticesSize;
+}
 #endif

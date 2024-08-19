@@ -5,7 +5,7 @@
 float gPI = 3.14159265358979323846;
 float gLightIntensity = 7.0;
 float gShininess = 25.0;
-vec3 gLightDirection = vec3(0.577, -0.577, 0.577);
+vec3 gLightDirection = vec3(0.577, 0.577, -0.577);
 
 //---------------------------------------------------
 // Input Variables
@@ -51,13 +51,13 @@ vec3 Phong(vec3 ks, float exp, vec3 l, vec3 v, vec3 n) {
 //---------------------------------------------------
 void main() {
 	// final color
-	vec3 finalColor = vec3(0.025, 0.025, 0.025);
+	vec3 finalColor = vec3(0.01, 0.01, 0.01);
 
 	// view direction
 	vec3 viewDirection = normalize(fragPosition - vec3(cam.invView[3].xyz));
 
 	// normal map
-	vec3 binormal = cross(fragTangent, fragNormal);
+	vec3 binormal = cross(fragNormal, fragTangent);
 	mat4 tangentSpaceAxis = mat4(vec4(fragTangent, 0.0), vec4(binormal, 0.0), vec4(fragNormal, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
 	vec4 sampledColor = texture(normal, fragTexCoord);
 	vec3 partialColor = (2.0 * sampledColor.rgb) - vec3(1.0, 1.0, 1.0);

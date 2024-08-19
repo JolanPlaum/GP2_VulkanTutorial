@@ -14,6 +14,7 @@
 #endif
 #include <tiny_obj_loader.h>
 #include "RAII/GP2_SingleTimeCommand.h"
+#include "Utils.h"
 
 
 //-----------------------------------------------------------------
@@ -24,7 +25,7 @@ Mesh::Mesh(VkDevice device, VkPhysicalDevice physicalDevice, std::unique_ptr<GP2
     , m_Textures{ std::move(textures) }
 {
     // Get vertices & indices data
-    std::vector<Vertex3D> vertices{};
+    std::vector<config::VertexType> vertices{};
     std::vector<uint32_t> indices{};
     LoadModel(filePath, vertices, indices);
 
@@ -136,38 +137,6 @@ void Mesh::CmdBindings(VkCommandBuffer commandBuffer, VkPipelineLayout layout, V
     vkCmdDrawIndexed(commandBuffer, m_IndexCount, 1, 0, 0, 0);
 }
 
-void Mesh::CreateVertexIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, std::unique_ptr<GP2_SingleTimeCommand> commandBuffer, const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& indices)
-{
-    // Calculate vertex + index buffer size
-    VkDeviceSize verticesSize{ sizeof(vertices[0]) * vertices.size() };
-    VkDeviceSize indicesSize{ sizeof(indices[0]) * indices.size() };
-    VkDeviceSize bufferSize{};
-
-    // Create staging buffer with assigned data
-    GP2_VkBuffer stagingBuffer{};
-    GP2_VkDeviceMemory stagingBufferMemory{};
-    bufferSize = CreateStagingBuffer(
-        physicalDevice, device,
-        stagingBuffer, stagingBufferMemory,
-        { verticesSize,		indicesSize },
-        { vertices.data(),	indices.data() });
-
-    // Create vertex index buffer
-    CreateBuffer(
-        physicalDevice, device,
-        m_VertexIndexBuffer, m_VertexIndexBufferMemory,
-        bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    // Transfer staging buffer to vertex index buffer
-    CopyBuffer(std::move(commandBuffer), stagingBuffer, m_VertexIndexBuffer, bufferSize);
-
-    // Set index count & offset
-    m_IndexCount = static_cast<uint32_t>(indices.size());
-    m_IndexOffset = verticesSize;
-}
-
 void Mesh::LoadModel(const char* filePath, std::vector<Vertex3D>& vertices, std::vector<uint32_t>& indices)
 {
     // Load in the data (will triangulate by default)
@@ -212,6 +181,89 @@ void Mesh::LoadModel(const char* filePath, std::vector<Vertex3D>& vertices, std:
             // Add index data to the list
             indices.push_back(uniqueVertices[vertex]);
         }
+    }
+}
+
+void Mesh::LoadModel(const char* filePath, std::vector<VertexPBR>& vertices, std::vector<uint32_t>& indices)
+{
+    // Load in the data (will triangulate by default)
+    tinyobj::attrib_t attrib{};
+    std::vector<tinyobj::shape_t> shapes{};
+    std::vector<tinyobj::material_t> materials{};
+    std::string warn{}, err{};
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filePath)) {
+        throw std::runtime_error(warn + err);
+    }
+
+    // TODO: LoadModel make temporary glm::vec vectors for attrib.vertices and attrib.texcoords
+    std::unordered_map<VertexPBR, uint32_t> uniqueVertices{};
+
+    // Loop over all the OBJ shapes
+    for (const tinyobj::shape_t& shape : shapes)
+    {
+        // TODO: LoadModel OBJ keep num_face_vertices in account when looping over faces
+        // Loop over all the faces
+        for (const tinyobj::index_t& index : shape.mesh.indices)
+        {
+            // Retrieve vertex data
+            VertexPBR vertex{};
+            vertex.pos = {
+                attrib.vertices[3 * index.vertex_index + 0],
+                attrib.vertices[3 * index.vertex_index + 1],
+                attrib.vertices[3 * index.vertex_index + 2]
+            };
+            vertex.normal = {
+                attrib.normals[3 * index.normal_index + 0],
+                attrib.normals[3 * index.normal_index + 1],
+                attrib.normals[3 * index.normal_index + 2]
+            };
+            vertex.texCoord = {
+                attrib.texcoords[2 * index.texcoord_index + 0],
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+            };
+
+            // Add vertex with index if it doesn't exist yet
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+
+            // Add index data to the list
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+
+    //Cheap Tangent Calculations
+    for (uint32_t i = 0; i < indices.size(); i += 3)
+    {
+        uint32_t index0 = indices[i];
+        uint32_t index1 = indices[size_t(i) + 1];
+        uint32_t index2 = indices[size_t(i) + 2];
+
+        const glm::vec3& p0 = vertices[index0].pos;
+        const glm::vec3& p1 = vertices[index1].pos;
+        const glm::vec3& p2 = vertices[index2].pos;
+        const glm::vec2& uv0 = vertices[index0].texCoord;
+        const glm::vec2& uv1 = vertices[index1].texCoord;
+        const glm::vec2& uv2 = vertices[index2].texCoord;
+
+        const glm::vec3 edge0 = p1 - p0;
+        const glm::vec3 edge1 = p2 - p0;
+        const glm::vec2 diffX = glm::vec2(uv1.x - uv0.x, uv2.x - uv0.x);
+        const glm::vec2 diffY = glm::vec2(uv1.y - uv0.y, uv2.y - uv0.y);
+        float r = 1.f / (diffX.x * diffY.y - diffX.y * diffY.x);
+
+        glm::vec3 tangent = (edge0 * diffY.y - edge1 * diffY.x) * r;
+        vertices[index0].tangent += tangent;
+        vertices[index1].tangent += tangent;
+        vertices[index2].tangent += tangent;
+    }
+
+    //Create the Tangents (reject)
+    for (auto& v : vertices)
+    {
+        v.tangent = glm::normalize(v.tangent - v.normal * (glm::dot(v.tangent, v.normal) / glm::dot(v.normal, v.normal)));
     }
 }
 

@@ -105,6 +105,7 @@ private:
 	// TODO: store offset for vertex and index in the buffer
 	// TODO: make a single DeviceMemory for all the meshes
 	std::unique_ptr<Mesh> m_pMeshObject;
+	std::unique_ptr<Mesh> m_pVehicle;
 	std::vector<Vertex3D> m_ModelVertices;
 	std::vector<uint32_t> m_ModelIndices;
 
@@ -194,6 +195,7 @@ private:
 	void EndSingleTimeCommands(std::unique_ptr<PoolCommandBuffers> pCommandBuffer);
 
 	void LoadModel(const char* filePath);
+	void LoadVehicleModel();
 
 	void CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory);
 	void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkBuffer& buffer, GP2_VkDeviceMemory& bufferMemory);

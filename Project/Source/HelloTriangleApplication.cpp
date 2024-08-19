@@ -87,21 +87,14 @@ void HelloTriangleApplication::InitVulkan()
 	CreateDepthResources();
 	CreateFramebuffers();
 
-	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(*m_pDevice, std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler() });
+	m_pDescriptorSetLayout = std::make_unique<GP2_VkDescriptorSetLayout>(*m_pDevice, std::vector{ GetLayoutBindingUBO(), GetLayoutBindingSampler(), GetLayoutBindingModel() });
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(*m_pDevice, std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
 	CreateGraphicsPipeline();
 
-	std::vector<Texture> meshTextures{};
-	meshTextures.push_back(CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha));
-	meshTextures.push_back(CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha));
-	m_pMeshObject = std::make_unique<Mesh>(
-		*m_pDevice, m_PhysicalDevice,
-		std::make_unique<GP2_SingleTimeCommand>(*m_pDevice, FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), m_GraphicsQueue),
-		config::MODEL_PATH.c_str(),
-		std::move(meshTextures));
+	LoadVehicleModel();
 	CreateTextureSampler();
 
-	CreateUniformBuffers();
+	CreateCameraAndModelUniformBuffers();
 	CreateDescriptorSets();
 	UpdateDescriptorSets(m_Textures);
 
@@ -140,6 +133,7 @@ void HelloTriangleApplication::Cleanup()
 	m_pVertexIndexBuffer = nullptr;
 
 	m_pMeshObject = nullptr;
+	m_pVehicle = nullptr;
 
 	m_pGraphicsPipeline = nullptr;
 	m_pPipelineLayout = nullptr;
@@ -251,10 +245,10 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 	CameraViewProj ubo{};
 
 	// View Matrix
-	ubo.view = glm::lookAt(glm::vec3(0.0f, -3.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(0.0f, -50.0f, 5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 	// Projection Matrix
-	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 10.0f);
+	ubo.proj = glm::perspective(glm::radians(45.0f), m_SwapChainExtent.width / (float)m_SwapChainExtent.height, 0.1f, 100.0f);
 
 	// Compensate for inverted Y (GLM) by flipping the sign on Y axis in the projection matrix
 	ubo.proj[1][1] *= -1;
@@ -267,9 +261,9 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 
 	/* TODO: MVP-MATRIX using a UBO this way is not the most efficient way to pass frequently changing values\
 	to the shader. A more efficient way to pass a small buffer of data to shaders are push constants*/
-	if (m_pMeshObject) {
-		m_pMeshObject->SetRotation(0.f, 0.f, time * 90.0f);
-		m_pMeshObject->Update(m_MappedModelBuffers[currentImage]);
+	if (m_pVehicle) {
+		m_pVehicle->SetRotation(90.f, 0.f, time * 90.0f);
+		m_pVehicle->Update(m_MappedModelBuffers[currentImage]);
 	}
 }
 
@@ -959,9 +953,9 @@ void HelloTriangleApplication::CreateGraphicsPipeline()
 	};
 
 	std::vector<VkVertexInputBindingDescription> bindingDescriptions{
-		Vertex3D::GetBindingDescription()
+		config::VertexType::GetBindingDescription()
 	};
-	auto vertexAttributeDescriptionsArray = Vertex3D::GetAttributeDescriptions();
+	auto vertexAttributeDescriptionsArray = config::VertexType::GetAttributeDescriptions();
 	std::vector<VkVertexInputAttributeDescription> attributeDescriptions{
 		vertexAttributeDescriptionsArray.begin(),
 		vertexAttributeDescriptionsArray.end()
@@ -1204,7 +1198,7 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 		}
 
 		// Render mesh
-		m_pMeshObject->Render(commandBuffer, *m_pPipelineLayout, m_pDescriptorSets->Get()[imageIndex], *m_pTextureSampler, m_MappedUniformBuffers[imageIndex]);
+		m_pVehicle->Render(commandBuffer, *m_pPipelineLayout, m_pDescriptorSets->Get()[imageIndex], *m_pTextureSampler, m_MappedModelBuffers[imageIndex]);
 
 	}
 	vkCmdEndRenderPass(commandBuffer);
@@ -1304,6 +1298,21 @@ void HelloTriangleApplication::LoadModel(const char* filePath)
 
 	std::cout << "\n\tOld size: " << sizeof(m_ModelVertices[0]) * oldAmountOfVertices << std::endl;
 	std::cout << "\tNew size: " << sizeof(m_ModelVertices[0]) * m_ModelVertices.size() << std::endl;
+}
+void HelloTriangleApplication::LoadVehicleModel()
+{
+	std::vector<Texture> meshTextures{ };
+	meshTextures.reserve(4);
+	meshTextures.push_back(CreateTextureImage("Resources/Textures/vehicle_diffuse.png", STBI_rgb_alpha));
+	meshTextures.push_back(CreateTextureImage("Resources/Textures/vehicle_normal.png", STBI_rgb_alpha));
+	meshTextures.push_back(CreateTextureImage("Resources/Textures/vehicle_specular.png", STBI_rgb_alpha));
+	meshTextures.push_back(CreateTextureImage("Resources/Textures/vehicle_gloss.png", STBI_rgb_alpha));
+
+	m_pVehicle = std::make_unique<Mesh>(
+		*m_pDevice, m_PhysicalDevice,
+		std::make_unique<GP2_SingleTimeCommand>(*m_pDevice, FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), m_GraphicsQueue),
+		"Resources/Models/vehicle.obj",
+		std::move(meshTextures));
 }
 
 void HelloTriangleApplication::CreateImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, GP2_VkImage& image, GP2_VkDeviceMemory& imageMemory)

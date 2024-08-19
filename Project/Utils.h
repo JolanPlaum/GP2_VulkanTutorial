@@ -26,6 +26,7 @@ namespace config
 #else
 	const bool EnableValidationLayers = true;
 #endif
+	using VertexType = VertexPBR;
 
 	const float MODEL_OFFSET_X = 0.0f;
 	const std::vector<Vertex3D> Vertices{
