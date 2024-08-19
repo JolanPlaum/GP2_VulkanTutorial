@@ -13,8 +13,8 @@ namespace config
 
 	const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-	const std::string VERTEX_SHADER_PATH = "Resources/Shaders/shader.vert.spv";
-	const std::string FRAGMENT_SHADER_PATH = "Resources/Shaders/shader.frag.spv";
+	const std::string VERTEX_SHADER_PATH = "Resources/Shaders/PBR.vert.spv";
+	const std::string FRAGMENT_SHADER_PATH = "Resources/Shaders/PBR.frag.spv";
 
 	const std::string MODEL_PATH = "Resources/Models/viking_room.obj";
 	const std::string TEXTURE_PATH = "Resources/Textures/viking_room.png";

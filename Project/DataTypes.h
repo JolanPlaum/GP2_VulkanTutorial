@@ -154,4 +154,14 @@ struct UniformBufferObject
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
 };
+struct CameraViewProj
+{
+    alignas(16) glm::mat4 invView;
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 proj;
+};
+struct ModelTrans
+{
+    alignas(16) glm::mat4 pos;
+};
 #endif

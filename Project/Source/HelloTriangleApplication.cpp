@@ -128,6 +128,8 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pCommandBuffers = nullptr;
 	m_pDescriptorSets = nullptr;
+	m_pCameraModelBufferMemory = nullptr;
+	m_pCameraModelBuffer = nullptr;
 	m_pUniformBufferMemory = nullptr;
 	m_pUniformBuffer = nullptr;
 
@@ -246,10 +248,7 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	UniformBufferObject ubo{};
-
-	// Model Matrix
-	ubo.model = glm::mat4(1);
+	CameraViewProj ubo{};
 
 	// View Matrix
 	ubo.view = glm::lookAt(glm::vec3(0.0f, -3.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -260,13 +259,17 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 	// Compensate for inverted Y (GLM) by flipping the sign on Y axis in the projection matrix
 	ubo.proj[1][1] *= -1;
 
+	// Inv View Matrix
+	ubo.invView = glm::inverse(ubo.view);
+
 	// Copy data to the mapped uniform buffer
-	memcpy(m_MappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
+	memcpy(m_MappedCameraBuffers[currentImage], &ubo, sizeof(ubo));
+
 	/* TODO: MVP-MATRIX using a UBO this way is not the most efficient way to pass frequently changing values\
 	to the shader. A more efficient way to pass a small buffer of data to shaders are push constants*/
 	if (m_pMeshObject) {
 		m_pMeshObject->SetRotation(0.f, 0.f, time * 90.0f);
-		m_pMeshObject->Update(m_MappedUniformBuffers[currentImage]);
+		m_pMeshObject->Update(m_MappedModelBuffers[currentImage]);
 	}
 }
 
@@ -901,7 +904,7 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingUBO()
 	uboLayoutBinding.binding = 0;
 	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
 	return uboLayoutBinding;
@@ -911,11 +914,22 @@ VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingSampler()
 	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 1;
 	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.descriptorCount = 2;
+	samplerLayoutBinding.descriptorCount = 4;
 	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	samplerLayoutBinding.pImmutableSamplers = nullptr; // Optional
 
 	return samplerLayoutBinding;
+}
+VkDescriptorSetLayoutBinding HelloTriangleApplication::GetLayoutBindingModel()
+{
+	VkDescriptorSetLayoutBinding uboLayoutBinding{};
+	uboLayoutBinding.binding = 2;
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	uboLayoutBinding.pImmutableSamplers = nullptr; // Optional
+
+	return uboLayoutBinding;
 }
 void HelloTriangleApplication::CreateGraphicsPipeline()
 {
@@ -1348,6 +1362,35 @@ void HelloTriangleApplication::CreateUniformBuffers()
 		m_MappedUniformBuffers[i] = (byteData + bufferSize * i);
 	}
 }
+void HelloTriangleApplication::CreateCameraAndModelUniformBuffers()
+{
+	VkDeviceSize cameraSize{ sizeof(CameraViewProj) };
+	VkDeviceSize modelSize{ sizeof(ModelTrans) };
+	size_t bufferCount{ m_SwapChainImages.size() };
+
+	m_pCameraModelBuffer = std::make_unique<GP2_VkBuffer>();
+	m_pCameraModelBufferMemory = std::make_unique<GP2_VkDeviceMemory>();
+	m_MappedCameraBuffers.resize(bufferCount);
+	m_MappedModelBuffers.resize(bufferCount);
+
+	CreateBuffer(
+		(cameraSize + modelSize) * bufferCount,
+		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		*m_pCameraModelBuffer,
+		*m_pCameraModelBufferMemory);
+
+	void* data{};
+	vkMapMemory(*m_pDevice, *m_pCameraModelBufferMemory, 0, (cameraSize + modelSize) * bufferCount, 0, &data);
+
+	char* byteData = static_cast<char*>(data);
+	for (size_t i{ 0 }; i < bufferCount; ++i)
+	{
+		size_t offset{ (cameraSize + modelSize) * i };
+		m_MappedCameraBuffers[i] = (byteData + offset);
+		m_MappedModelBuffers[i] = (byteData + offset + cameraSize);
+	}
+}
 void HelloTriangleApplication::CreateDepthResources()
 {
 	// Find a depth format
@@ -1656,8 +1699,8 @@ void HelloTriangleApplication::CreateDescriptorSets()
 	// TODO: don't use magic numbers for DescriptorPoolSize but link it to DescriptorSetLayout
 	// Describes which descriptor type(s) are used and how many of each type
 	std::vector<VkDescriptorPoolSize> poolSizes{
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 * descriptorSetCount },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2 * descriptorSetCount }
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 * descriptorSetCount },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4 * descriptorSetCount }
 	};
 
 	// Create descriptor pool resource
@@ -1673,10 +1716,15 @@ void HelloTriangleApplication::UpdateDescriptorSets(const std::vector<Texture>& 
 	for (size_t i{}; i < m_pDescriptorSets->Get().size(); ++i)
 	{
 		// Descriptors that refer to buffers are configured with a VkDescriptorBufferInfo struct
-		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = *m_pUniformBuffer;
-		bufferInfo.range = sizeof(UniformBufferObject);
-		bufferInfo.offset = bufferInfo.range * i;
+		VkDescriptorBufferInfo bufferInfoCam{};
+		bufferInfoCam.buffer = *m_pCameraModelBuffer;
+		bufferInfoCam.range = sizeof(CameraViewProj);
+		bufferInfoCam.offset = (sizeof(CameraViewProj) + sizeof(ModelTrans)) * i;
+
+		VkDescriptorBufferInfo bufferInfoModel{};
+		bufferInfoModel.buffer = *m_pCameraModelBuffer;
+		bufferInfoModel.range = sizeof(ModelTrans);
+		bufferInfoModel.offset = bufferInfoCam.offset + bufferInfoCam.range;
 
 		// Image info
 		std::vector<VkDescriptorImageInfo> imageInfos{ textures.size() };
@@ -1688,24 +1736,32 @@ void HelloTriangleApplication::UpdateDescriptorSets(const std::vector<Texture>& 
 		}
 
 		// The configuration of descriptors
-		std::vector<VkWriteDescriptorSet> descriptorWrites{ 1 };
+		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
 		descriptorWrites[0].dstBinding = 0; // Binding index
 		descriptorWrites[0].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrites[0].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
+		descriptorWrites[0].pBufferInfo = &bufferInfoCam;
+
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
+		descriptorWrites[1].dstBinding = 2; // Binding index
+		descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[1].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+		descriptorWrites[1].pBufferInfo = &bufferInfoModel;
 
 		if (imageInfos.empty() == false) {
 			descriptorWrites.push_back({});
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
-			descriptorWrites[1].dstBinding = 1; // Binding index
-			descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size()); // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
-			descriptorWrites[1].pImageInfo = imageInfos.data();
+			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[2].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
+			descriptorWrites[2].dstBinding = 1; // Binding index
+			descriptorWrites[2].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].descriptorCount = static_cast<uint32_t>(imageInfos.size()); // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+			descriptorWrites[2].pImageInfo = imageInfos.data();
 		}
 
 		// Update the configuration of the descriptor(s)

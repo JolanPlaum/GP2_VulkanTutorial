@@ -121,6 +121,11 @@ private:
 	std::unique_ptr<GP2_VkBuffer> m_pUniformBuffer; // Created in CreateUniformBuffers & referenced in UpdateDescriptorSets
 	std::unique_ptr<GP2_VkDeviceMemory> m_pUniformBufferMemory; // Only used in CreateUniformBuffers
 	std::vector<void*> m_MappedUniformBuffers; // Created in CreateUniformBuffers & assigned in UpdateUniformBuffer
+	std::unique_ptr<GP2_VkBuffer> m_pCameraModelBuffer;
+	std::unique_ptr<GP2_VkDeviceMemory> m_pCameraModelBufferMemory;
+	std::vector<void*> m_MappedCameraBuffers;
+	std::vector<void*> m_MappedModelBuffers;
+
 	std::unique_ptr<PoolDescriptorSets> m_pDescriptorSets;
 	std::unique_ptr<PoolCommandBuffers> m_pCommandBuffers;
 
@@ -178,6 +183,7 @@ private:
 
 	static VkDescriptorSetLayoutBinding GetLayoutBindingUBO();
 	static VkDescriptorSetLayoutBinding GetLayoutBindingSampler();
+	static VkDescriptorSetLayoutBinding GetLayoutBindingModel();
 	void CreateGraphicsPipeline();
 	VkShaderModule CreateShaderModule(const std::vector<char>& code);
 
@@ -195,6 +201,7 @@ private:
 	template <typename IndexType> void CreateIndexBuffer(const std::vector<IndexType>& indices);
 	template <typename VertexType, typename IndexType> void CreateVertexIndexBuffer(const std::vector<VertexType>& vertices, const std::vector<IndexType>& indices);
 	void CreateUniformBuffers();
+	void CreateCameraAndModelUniformBuffers();
 	void CreateDepthResources();
 	void CreateTextureImage(const char* filePath, int nrChannels, std::unique_ptr<Texture>& pTexture);
 	void CreateTextureImage(const char* filePath, int nrChannels, Texture& texture);
