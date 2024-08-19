@@ -6,7 +6,6 @@
 #include <GLFW/glfw3.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 #include "Utils.h"
 #include "DataTypes.h"
@@ -22,6 +21,7 @@
 #include <unordered_map>
 
 #include "RAII/GP2_VkShaderModule.h"
+#include "RAII/GP2_SingleTimeCommand.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -91,10 +91,14 @@ void HelloTriangleApplication::InitVulkan()
 	m_pPipelineLayout = std::make_unique<GP2_VkPipelineLayout>(*m_pDevice, std::vector<VkDescriptorSetLayout>{ *m_pDescriptorSetLayout });
 	CreateGraphicsPipeline();
 
-	LoadModel(config::MODEL_PATH.c_str());
-	CreateVertexIndexBuffer(m_ModelVertices, m_ModelIndices);
-	m_Textures.push_back(CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha));
-	m_Textures.push_back(CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha));
+	std::vector<Texture> meshTextures{};
+	meshTextures.push_back(CreateTextureImage(config::TEXTURE_PATH.c_str(), STBI_rgb_alpha));
+	meshTextures.push_back(CreateTextureImage("Resources/Textures/texture.jpg", STBI_rgb_alpha));
+	m_pMeshObject = std::make_unique<Mesh>(
+		*m_pDevice, m_PhysicalDevice,
+		std::make_unique<GP2_SingleTimeCommand>(*m_pDevice, FindQueueFamilies(m_PhysicalDevice).GraphicsFamily.value(), m_GraphicsQueue),
+		config::MODEL_PATH.c_str(),
+		std::move(meshTextures));
 	CreateTextureSampler();
 
 	CreateUniformBuffers();
@@ -132,6 +136,8 @@ void HelloTriangleApplication::Cleanup()
 
 	m_pVertexIndexBufferMemory = nullptr;
 	m_pVertexIndexBuffer = nullptr;
+
+	m_pMeshObject = nullptr;
 
 	m_pGraphicsPipeline = nullptr;
 	m_pPipelineLayout = nullptr;
@@ -243,7 +249,7 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 	UniformBufferObject ubo{};
 
 	// Model Matrix
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::mat4(1);
 
 	// View Matrix
 	ubo.view = glm::lookAt(glm::vec3(0.0f, -3.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -258,6 +264,10 @@ void HelloTriangleApplication::UpdateUniformBuffer(uint32_t currentImage)
 	memcpy(m_MappedUniformBuffers[currentImage], &ubo, sizeof(ubo));
 	/* TODO: MVP-MATRIX using a UBO this way is not the most efficient way to pass frequently changing values\
 	to the shader. A more efficient way to pass a small buffer of data to shaders are push constants*/
+	if (m_pMeshObject) {
+		m_pMeshObject->SetRotation(0.f, 0.f, time * 90.0f);
+		m_pMeshObject->Update(m_MappedUniformBuffers[currentImage]);
+	}
 }
 
 void HelloTriangleApplication::FramebufferResizeCallback(GLFWwindow* window, int width, int height)
@@ -1179,21 +1189,9 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer commandBuffer
 			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 		}
 
-		// Bind index buffer
-		vkCmdBindIndexBuffer(commandBuffer, *m_pVertexIndexBuffer, sizeof(m_ModelVertices[0]) * m_ModelVertices.size(), VK_INDEX_TYPE_UINT32);
+		// Render mesh
+		m_pMeshObject->Render(commandBuffer, *m_pPipelineLayout, m_pDescriptorSets->Get()[imageIndex], *m_pTextureSampler, m_MappedUniformBuffers[imageIndex]);
 
-		// Bind the right descriptor set
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pPipelineLayout, 0, 1, &m_pDescriptorSets->Get()[imageIndex], 0, nullptr);
-
-		{
-			// Bind vertex buffer
-			std::vector<VkBuffer> vertexBuffers{ *m_pVertexIndexBuffer };
-			std::vector<VkDeviceSize> offsets{ 0 };
-			vkCmdBindVertexBuffers(commandBuffer, 0, static_cast<uint32_t>(vertexBuffers.size()), vertexBuffers.data(), offsets.data());
-
-			// TODO: CmdDraw get rid of magic numbers
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_ModelIndices.size()), 1, 0, 0, 0);
-		}
 	}
 	vkCmdEndRenderPass(commandBuffer);
 
@@ -1690,7 +1688,7 @@ void HelloTriangleApplication::UpdateDescriptorSets(const std::vector<Texture>& 
 		}
 
 		// The configuration of descriptors
-		std::vector<VkWriteDescriptorSet> descriptorWrites{ 2 };
+		std::vector<VkWriteDescriptorSet> descriptorWrites{ 1 };
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
 		descriptorWrites[0].dstBinding = 0; // Binding index
@@ -1699,13 +1697,16 @@ void HelloTriangleApplication::UpdateDescriptorSets(const std::vector<Texture>& 
 		descriptorWrites[0].descriptorCount = 1; // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
 		descriptorWrites[0].pBufferInfo = &bufferInfo;
 
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
-		descriptorWrites[1].dstBinding = 1; // Binding index
-		descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size()); // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
-		descriptorWrites[1].pImageInfo = imageInfos.data();
+		if (imageInfos.empty() == false) {
+			descriptorWrites.push_back({});
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = m_pDescriptorSets->Get()[i]; // Descriptor set to update
+			descriptorWrites[1].dstBinding = 1; // Binding index
+			descriptorWrites[1].dstArrayElement = 0; // Descriptors can be arrays, in which case this specifies start idx
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorCount = static_cast<uint32_t>(imageInfos.size()); // Should match the number of elements in either pImageInfo, pBufferInfo or pTexelBufferView
+			descriptorWrites[1].pImageInfo = imageInfos.data();
+		}
 
 		// Update the configuration of the descriptor(s)
 		vkUpdateDescriptorSets(*m_pDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);

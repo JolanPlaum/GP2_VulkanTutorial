@@ -29,6 +29,7 @@
 #include "PoolCommandBuffers.h"
 #include "PoolDescriptorSets.h"
 #include "Texture.h"
+#include "Mesh.h"
 
 // Class Forward Declarations
 struct GLFWwindow;
@@ -103,6 +104,7 @@ private:
 	// TODO: create a vertexindex buffer per mesh object
 	// TODO: store offset for vertex and index in the buffer
 	// TODO: make a single DeviceMemory for all the meshes
+	std::unique_ptr<Mesh> m_pMeshObject;
 	std::vector<Vertex3D> m_ModelVertices;
 	std::vector<uint32_t> m_ModelIndices;
 
